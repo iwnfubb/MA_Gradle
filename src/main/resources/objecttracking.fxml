@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0"
+            prefWidth="1225.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="guicontroler.GUIController_ObjectTracking">
+    <center>
+        <GridPane prefHeight="292.0" prefWidth="1054.0" BorderPane.alignment="CENTER">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="405.0" minWidth="10.0" prefWidth="405.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="409.0" minWidth="10.0" prefWidth="401.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="409.0" minWidth="10.0" prefWidth="403.0"/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints maxHeight="397.0" minHeight="0.0" prefHeight="31.0" vgrow="SOMETIMES"/>
+                <RowConstraints maxHeight="378.0" minHeight="0.0" prefHeight="32.0" vgrow="SOMETIMES"/>
+                <RowConstraints maxHeight="231.0" minHeight="10.0" prefHeight="231.0" vgrow="SOMETIMES"/>
+            </rowConstraints>
+            <children>
+                <SplitPane dividerPositions="0.4050632911392405" prefHeight="0.0" prefWidth="403.0">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="27.0" prefWidth="144.0">
+                            <children>
+                                <SplitPane dividerPositions="0.3787878787878788" layoutX="-8.0" layoutY="-3.0"
+                                           prefHeight="34.0" prefWidth="200.0">
+                                    <items>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="158.0" prefWidth="69.0">
+                                            <children>
+                                                <Label layoutX="25.0" layoutY="4.0" prefHeight="21.0" prefWidth="47.0"
+                                                       text="SURF"/>
+                                            </children>
+                                        </AnchorPane>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="75.0" prefWidth="42.0">
+                                            <children>
+                                                <Label layoutX="8.0" layoutY="4.0" prefHeight="21.0" prefWidth="104.0"
+                                                       text="Hessian TH"/>
+                                            </children>
+                                        </AnchorPane>
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="90.0" prefWidth="279.0">
+                            <children>
+                                <Slider fx:id="hessianThreshold" layoutX="7.0" layoutY="6.0" prefHeight="18.0"
+                                        prefWidth="215.0"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <SplitPane dividerPositions="0.3541147132169576" prefHeight="0.0" prefWidth="403.0"
+                           GridPane.columnIndex="1">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="26.0" prefWidth="139.0">
+                            <children>
+                                <SplitPane dividerPositions="0.46464646464646464" layoutX="-40.0" prefHeight="24.0"
+                                           prefWidth="200.0">
+                                    <items>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="158.0" prefWidth="69.0">
+                                            <children>
+                                                <Label layoutX="41.0" layoutY="1.0" prefHeight="21.0" prefWidth="47.0"
+                                                       text="OF"/>
+                                            </children>
+                                        </AnchorPane>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="158.0" prefWidth="111.0">
+                                            <children>
+                                                <CheckBox fx:id="opticalFlowActive" layoutY="1.0"
+                                                          mnemonicParsing="false" text="Active"/>
+                                            </children>
+                                        </AnchorPane>
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="90.0" prefWidth="279.0">
+                            <children>
+                                <Slider fx:id="knnHistory" layoutX="-1.0" layoutY="6.0" prefHeight="14.0"
+                                        prefWidth="251.0"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <SplitPane dividerPositions="0.4050632911392405" prefHeight="175.0" prefWidth="397.0"
+                           GridPane.rowIndex="1">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="228.0" prefWidth="73.0">
+                            <children>
+                                <SplitPane dividerPositions="0.3434343434343434" prefHeight="29.0" prefWidth="200.0">
+                                    <items>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="27.0" prefWidth="86.0">
+                                            <children>
+                                                <CheckBox fx:id="surfImgActive" layoutX="8.0" layoutY="2.0"
+                                                          mnemonicParsing="false" text="Active"/>
+                                            </children>
+                                        </AnchorPane>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="27.0" prefWidth="39.0">
+                                            <children>
+                                                <Label layoutY="3.0" prefHeight="21.0" prefWidth="72.0"
+                                                       text="NOctaveLayer">
+                                                    <font>
+                                                        <Font size="10.0"/>
+                                                    </font>
+                                                </Label>
+                                            </children>
+                                        </AnchorPane>
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="31.0" prefWidth="355.0">
+                            <children>
+                                <Slider fx:id="nOctaveLayer" layoutX="7.0" layoutY="5.0" prefHeight="18.0"
+                                        prefWidth="216.0"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <ImageView fx:id="gmmWeightView" fitHeight="232.0" fitWidth="397.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.rowIndex="2"/>
+                <ImageView fx:id="gmmMeansView" fitHeight="229.0" fitWidth="408.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0"
+                           GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <CheckBox fx:id="clusteringActive" layoutX="10.0" layoutY="5.0" mnemonicParsing="false"
+                                          text="Clustering"/>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <SplitPane dividerPositions="0.5" layoutX="-2.0" layoutY="-3.0" prefHeight="35.0"
+                                           prefWidth="283.0">
+                                    <items>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                                            <children>
+                                                <TextField fx:id="epsilon" layoutX="4.0" layoutY="-1.0"
+                                                           prefHeight="31.0" prefWidth="129.0"/>
+                                            </children>
+                                        </AnchorPane>
+                                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                                            <children>
+                                                <TextField fx:id="minPoints" layoutY="1.0" prefHeight="31.0"
+                                                           prefWidth="129.0"/>
+                                            </children>
+                                        </AnchorPane>
+                                    </items>
+                                </SplitPane>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <ImageView fx:id="maskView" fitHeight="230.0" fitWidth="407.0" pickOnBounds="true" preserveRatio="true"
+                           GridPane.columnIndex="2" GridPane.rowIndex="2"/>
+            </children>
+        </GridPane>
+    </center>
+    <top>
+        <GridPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" opacity="0.98" prefHeight="472.0"
+                  prefWidth="734.0" BorderPane.alignment="CENTER">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="511.0" minWidth="10.0" prefWidth="504.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="777.0" minWidth="10.0" prefWidth="509.0"/>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="777.0" minWidth="10.0" prefWidth="509.0"/>
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints maxHeight="603.0" minHeight="10.0" prefHeight="223.0" vgrow="SOMETIMES"/>
+                <RowConstraints maxHeight="603.0" minHeight="0.0" prefHeight="22.0" vgrow="SOMETIMES"/>
+                <RowConstraints maxHeight="471.0" minHeight="0.0" prefHeight="0.0" vgrow="SOMETIMES"/>
+                <RowConstraints maxHeight="300.0" minHeight="10.0" prefHeight="209.0" vgrow="SOMETIMES"/>
+            </rowConstraints>
+            <children>
+                <ImageView fx:id="currentFrameView" fitHeight="223.0" fitWidth="399.0" pickOnBounds="true"
+                           preserveRatio="true"/>
+                <ImageView fx:id="gaussianBlurView" fitHeight="225.0" fitWidth="404.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="1"/>
+                <Label prefHeight="21.0" prefWidth="399.0" text="Original image" GridPane.rowIndex="1"/>
+                <ImageView fx:id="surfImgView" fitHeight="216.0" fitWidth="396.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.rowIndex="3"/>
+                <ImageView fx:id="opticalFlowView" fitHeight="211.0" fitWidth="405.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                <SplitPane dividerPositions="0.3541147132169576" prefHeight="0.0" prefWidth="403.0"
+                           GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="26.0" prefWidth="139.0"/>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="90.0" prefWidth="279.0">
+                            <children>
+                                <Slider fx:id="gaussianBlur" layoutX="-1.0" layoutY="6.0" prefHeight="14.0"
+                                        prefWidth="251.0"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <ImageView fx:id="grabcutView" fitHeight="227.0" fitWidth="407.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="2"/>
+                <SplitPane dividerPositions="0.29797979797979796" prefHeight="160.0" prefWidth="200.0"
+                           GridPane.columnIndex="2" GridPane.rowIndex="1">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <Label layoutX="53.0" layoutY="4.0" text="Grabcut"/>
+                            </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                            <children>
+                                <CheckBox fx:id="grabcutActive" layoutX="13.0" layoutY="4.0" mnemonicParsing="false"
+                                          text="Active"/>
+                            </children>
+                        </AnchorPane>
+                    </items>
+                </SplitPane>
+                <ImageView fx:id="backgroundModel" fitHeight="213.0" fitWidth="410.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+                <ImageView fx:id="matchesView" fitHeight="213.0" fitWidth="409.0" pickOnBounds="true"
+                           preserveRatio="true" GridPane.columnIndex="2" GridPane.rowIndex="3"/>
+            </children>
+        </GridPane>
+    </top>
+    <bottom>
+        <BorderPane prefHeight="36.0" prefWidth="800.0" BorderPane.alignment="CENTER">
+            <center>
+                <Button fx:id="button" mnemonicParsing="false" onAction="#startCamera" prefHeight="31.0"
+                        prefWidth="155.0" text="Start Camera" BorderPane.alignment="CENTER"/>
+            </center>
+            <right>
+                <Button fx:id="button2" mnemonicParsing="false" onAction="#setStaticBackground" prefHeight="31.0"
+                        prefWidth="219.0" text="Set Current Frame As BG" BorderPane.alignment="CENTER"/>
+            </right>
+        </BorderPane>
+    </bottom>
+</BorderPane>

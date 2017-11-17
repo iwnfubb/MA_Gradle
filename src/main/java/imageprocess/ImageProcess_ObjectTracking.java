@@ -1,0 +1,579 @@
+package imageprocess;
+
+import algorithms.Clustering;
+import net.sf.javaml.clustering.OPTICS;
+import net.sf.javaml.core.Dataset;
+import net.sf.javaml.core.DefaultDataset;
+import net.sf.javaml.core.Instance;
+import net.sf.javaml.core.SparseInstance;
+import org.opencv.core.*;
+import org.opencv.features2d.Features2d;
+import org.opencv.features2d.FlannBasedMatcher;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.ml.EM;
+import org.opencv.videoio.VideoCapture;
+import org.opencv.xfeatures2d.SURF;
+import utils.KeyPointsAndFeaturesVector;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.opencv.video.Video.calcOpticalFlowFarneback;
+
+public class ImageProcess_ObjectTracking {
+    private VideoCapture capture;
+    private Size gaussianFilterSize = (new Size(3, 3));
+    private SURF surf;
+    private Mat prevgray = new Mat();
+    private Mat previousFrame = new Mat();
+    private Mat previousFrameDescriptors = new Mat();
+    private MatOfKeyPoint previousKeyPoint = new MatOfKeyPoint();
+    private int frameCounter = 0;
+    private KeyPointsAndFeaturesVector backgroundModelTobi;
+    private Mat backGroundModel;
+    boolean initBackgroundModel = false;
+
+    public ImageProcess_ObjectTracking(VideoCapture capture) {
+        this.capture = capture;
+        this.surf = SURF.create();
+        this.surf.setUpright(false);
+    }
+
+    public Mat getOriginalFrame() {
+        Mat currentFrame = new Mat();
+        if (this.capture.isOpened()) {
+            try {
+                this.capture.read(currentFrame);
+            } catch (Exception e) {
+                System.err.println("Exception during the image elaboration: " + e);
+            }
+        }
+        return currentFrame;
+    }
+
+    public MatOfKeyPoint getSURFKeyPoint(Mat input, Mat mask) {
+        MatOfKeyPoint keyPointVector = new MatOfKeyPoint();
+        surf.detect(input, keyPointVector, mask);
+        return keyPointVector;
+    }
+
+    public Mat getGaussianBlur(Mat input) {
+        Mat blurFrame = new Mat();
+        if (!input.empty()) {
+            Imgproc.GaussianBlur(input, blurFrame, gaussianFilterSize, 0);
+        }
+        return blurFrame;
+    }
+
+    public void setGaussianFilterSize(int size) {
+        int validSize = (size % 2) != 0 ? size : size - 1;
+        log("Change Gaussian filter size to:" + validSize);
+        gaussianFilterSize = new Size(validSize, validSize);
+    }
+
+    public void setHessianThreshold(int value) {
+        log("Change Hessian Threshold to:" + value);
+        surf.setHessianThreshold(value);
+    }
+
+    public void setNOctaveLayer(int value) {
+        log("Change Hessian Threshold to:" + value);
+        surf.setNOctaveLayers(value);
+    }
+
+    public Mat opticalFLow(Mat input, Mat flow) {
+        Mat img = new Mat(), copyOfOriginal = new Mat();
+        Mat flowUmat = new Mat();
+        input.copyTo(img);
+        input.copyTo(copyOfOriginal);
+        Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2GRAY);
+
+        if (!prevgray.empty()) {
+            calcOpticalFlowFarneback(prevgray, img, flowUmat, 0.4, 1, 12, 2, 8, 1.5, 0);
+            flowUmat.copyTo(flow);
+            for (int y = 0; y < copyOfOriginal.rows(); y += 10)
+                for (int x = 0; x < copyOfOriginal.cols(); x += 10) {
+                    double flowatx = flowUmat.get(y, x)[0] * 10;
+                    double flowaty = flowUmat.get(y, x)[1] * 10;
+                    Imgproc.line(copyOfOriginal,
+                            new Point(x, y),
+                            new Point(Math.round(x + flowatx), Math.round(y + flowaty)),
+                            new Scalar(0, 255, 0, 0));
+                    Imgproc.circle(copyOfOriginal,
+                            new Point(x, y),
+                            2,
+                            new Scalar(0, 0, 0, 0), -2, 4, 0);
+                }
+            img.copyTo(prevgray);
+        } else {
+            img.copyTo(prevgray);
+        }
+        return copyOfOriginal;
+    }
+
+    public Mat clusteringCoordinateDBSCAN(Mat input, MatOfKeyPoint surfKeyPoint, double eps, int minP) {
+        System.out.println("Starting Clustering Position My_DBSCAN ...");
+        long startTime = System.currentTimeMillis();
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        Dataset data = new DefaultDataset();
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            double x = keyPoint.pt.x;
+            double y = keyPoint.pt.y;
+            //Create instance with 2 Attributes
+            Instance instance = new SparseInstance(2);
+            instance.put(1, x);
+            instance.put(2, y);
+            data.add(instance);
+        }
+        System.out.println("Done1");
+
+        //===== OPTIC =====
+        OPTICS optics = new OPTICS(eps, minP);
+        Dataset[] cluster = optics.cluster(data);
+
+        //===== My_DBSCAN =====
+        //DensityBasedSpatialClustering dbscan = new DensityBasedSpatialClustering(eps, minP);
+        //Dataset[] cluster = dbscan.cluster(data);
+
+        System.out.println("Done2");
+        for (int i = 0; i < cluster.length; i++) {
+            for (int index = 0; index < cluster[i].size(); index++) {
+                Instance instance = cluster[i].get(index);
+                Scalar scalar;
+                if (i == 0) {
+                    scalar = new Scalar(0, 255, 0, 0);
+                } else if (i == 1) {
+                    scalar = new Scalar(0, 0, 255, 0);
+                } else {
+                    scalar = new Scalar(255, 0, 0, 0);
+                }
+                Imgproc.circle(copyOfOriginal,
+                        new Point((int) instance.value(1), (int) instance.value(2)),
+                        5,
+                        scalar, -5, 4, 0);
+
+            }
+        }
+        System.out.println("Done3");
+        System.out.println("Clustering Time:" + (System.currentTimeMillis() - startTime));
+        return copyOfOriginal;
+    }
+
+    private Mat clusteringTexture(Mat input, MatOfKeyPoint surfKeyPoint) {
+        System.out.println("Starting Clustering Texture...");
+        long startTime = System.currentTimeMillis();
+        Mat labels = new Mat();
+        Mat probs = new Mat();
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+
+        Mat samples = new Mat(new Size(3, keyPoints.size()), CvType.CV_8UC1);
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            double[] pixel = copyOfOriginal.get((int) keyPoint.pt.y, (int) keyPoint.pt.x);
+            double b = pixel[0];
+            double g = pixel[1];
+            double r = pixel[2];
+            samples.put(i, 0, b);
+            samples.put(i, 1, g);
+            samples.put(i, 2, r);
+        }
+        System.out.println("Done1");
+
+        EM em = EM.create();
+        em.setClustersNumber(3);
+        samples.convertTo(samples, CvType.CV_64FC1, 1.0 / 255.0, 0.0);
+        em.trainEM(samples, new Mat(), labels, probs);
+        System.out.println("Done2");
+
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            Scalar scalar;
+            if (labels.get(i, 0)[0] == 0) {
+                scalar = new Scalar(255, 0, 0, 0);
+            } else if (labels.get(i, 0)[0] == 1) {
+                scalar = new Scalar(0, 255, 0, 0);
+            } else {
+                scalar = new Scalar(0, 0, 255, 0);
+            }
+            Imgproc.circle(copyOfOriginal,
+                    new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
+                    5,
+                    scalar, -5, 4, 0);
+        }
+        System.out.println("Done3");
+        System.out.println("Clustering Time:" + (System.currentTimeMillis() - startTime));
+        return copyOfOriginal;
+    }
+
+    public Mat clusteringCoordinateKmeans(MatOfKeyPoint surfKeyPoint, Mat input,
+                                          Mat flow) {
+        System.out.println("Starting Clustering Position Kmeans ...");
+        long startTime = System.currentTimeMillis();
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+        Mat labels = new Mat(new Size(1, keyPoints.size()), CvType.CV_64F);
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        //Create samples based on optical flow
+        Mat samples = new Mat(new Size(2, keyPoints.size()), CvType.CV_64F);
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            double x = keyPoint.pt.x;
+            double y = keyPoint.pt.y;
+            samples.put(i, 0, x);
+            samples.put(i, 1, y);
+            if (Math.abs(flow.get((int) y, (int) x)[0]) > 1.0
+                    || Math.abs(flow.get((int) y, (int) x)[1]) > 1.0) {
+                labels.put(i, 0, 0);
+            } else {
+                labels.put(i, 0, 1);
+            }
+        }
+        System.out.println("Done1");
+        Mat centers = new Mat();
+        TermCriteria criteria = new TermCriteria(
+                TermCriteria.COUNT, 100, 1);
+        Core.kmeans(samples, 2, labels, criteria, 3, Core.KMEANS_USE_INITIAL_LABELS, centers);
+        System.out.println("Done2");
+
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            Scalar scalar;
+            if (labels.get(i, 0)[0] == 0) {
+                scalar = new Scalar(255, 0, 0, 0);
+            } else if (labels.get(i, 0)[0] == 1) {
+                scalar = new Scalar(0, 255, 0, 0);
+            } else {
+                scalar = new Scalar(0, 0, 255, 0);
+            }
+            Imgproc.circle(copyOfOriginal,
+                    new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
+                    5,
+                    scalar, -5, 4, 0);
+
+        }
+        System.out.println("Done3");
+        System.out.println("Clustering Time:" + (System.currentTimeMillis() - startTime));
+        return copyOfOriginal;
+    }
+
+    public Mat clusteringCoordinateGMM(Mat input, MatOfKeyPoint surfKeyPoint) {
+        System.out.println("Starting Clustering Position GMM...");
+        long startTime = System.currentTimeMillis();
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+        Mat labels = new Mat();
+        Mat probs = new Mat();
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        float width = copyOfOriginal.width();
+        float height = copyOfOriginal.height();
+        Mat samples = new Mat(new Size(2, (int) keyPoints.size()), CvType.CV_64FC1);
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            double x = keyPoint.pt.x;
+            double y = keyPoint.pt.y;
+            samples.put(i, 0, (x / width));
+            samples.put(i, 1, (y / height));
+        }
+        System.out.println("Done1");
+        EM em = EM.create();
+        em.setClustersNumber(3);
+        em.setTermCriteria(new TermCriteria(TermCriteria.COUNT, 100, 1));
+        em.trainEM(samples, new Mat(), labels, probs);
+        System.out.println("Done2");
+
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            Scalar scalar;
+            if (labels.get(i, 0)[0] == 0) {
+                scalar = new Scalar(255, 0, 0, 0);
+            } else if (labels.get(i, 0)[0] == 1) {
+                scalar = new Scalar(0, 255, 0, 0);
+            } else {
+                scalar = new Scalar(0, 0, 255, 0);
+            }
+            Imgproc.circle(copyOfOriginal,
+                    new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
+                    5,
+                    scalar, -5, 4, 0);
+        }
+        System.out.println("Done3");
+        System.out.println("Clustering Time:" + (System.currentTimeMillis() - startTime));
+        return copyOfOriginal;
+    }
+
+    public Mat grabCut(Mat input, MatOfKeyPoint surfKeyPoint, Mat flow) {
+        long start = System.currentTimeMillis();
+        log("Start Grabcut ... ");
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+
+        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(Imgproc.GC_PR_BGD));
+        Mat bgModel = new Mat(new Size(65, 1), CvType.CV_64FC1, Scalar.all(0));
+        Mat fgModel = new Mat(new Size(65, 1), CvType.CV_64FC1, Scalar.all(0));
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        for (int i = 0; i < keyPoints.size(); i++) {
+            Point pt = keyPoints.get(i).pt;
+            mask.put((int) pt.y, (int) pt.x, (byte) Imgproc.GC_PR_FGD);
+        }
+        Imgproc.grabCut(input, mask,
+                new Rect(20, 20, input.cols() - 20, input.rows() - 20),
+                bgModel, fgModel, 5,
+                Imgproc.GC_INIT_WITH_MASK);
+        log("Stop Grabcut ... ");
+        log("Time :" + (System.currentTimeMillis() - start));
+        return mergeImageAndMask(copyOfOriginal, mask);
+    }
+
+    public Mat[] proposedModel(Mat input, MatOfKeyPoint surfKeyPoint, Mat flow) {
+        List<KeyPoint> keyPoints = surfKeyPoint.toList();
+        if (!initBackgroundModel) {
+            backGroundModel = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(Imgproc.GC_PR_BGD));
+            initBackgroundModel = true;
+            return new Mat[]{input};
+        }
+        long start = System.currentTimeMillis();
+        //update background model
+        log("Update background model ... ");
+        for (int y = 0; y < flow.rows(); y++)
+            for (int x = 0; x < flow.cols(); x++) {
+                double[] ptr = backGroundModel.get(y, x);
+                if (ptr[0] == (byte) Imgproc.GC_FGD) {
+                    backGroundModel.put(y, x, (byte) Imgproc.GC_PR_FGD);
+                }
+            }
+
+        for (int i = 0; i < keyPoints.size(); i++) {
+            Point pt = keyPoints.get(i).pt;
+            double floatAtX = flow.get((int) pt.y, (int) pt.x)[0];
+            double floatAtY = flow.get((int) pt.y, (int) pt.x)[1];
+            double[] ptr = backGroundModel.get((int) pt.y, (int) pt.x);
+
+            if (Math.abs(floatAtX) > 1.0f && Math.abs(floatAtY) > 1.0f) {
+                if (ptr[0] == (byte) Imgproc.GC_PR_FGD) {
+                    backGroundModel.put((int) pt.y, (int) pt.x, (byte) Imgproc.GC_FGD);
+                } else if (ptr[0] == (byte) Imgproc.GC_PR_BGD) {
+                    backGroundModel.put((int) pt.y, (int) pt.x, (byte) Imgproc.GC_PR_FGD);
+                }
+            } else {
+                if (ptr[0] == (byte) Imgproc.GC_FGD) {
+                    backGroundModel.put((int) pt.y, (int) pt.x, (byte) Imgproc.GC_PR_FGD);
+                } else if (ptr[0] == (byte) Imgproc.GC_PR_FGD) {
+                    backGroundModel.put((int) pt.y, (int) pt.x, (byte) Imgproc.GC_PR_BGD);
+                }
+            }
+        }
+
+        log("Start Grabcut ... ");
+        Mat mask = new Mat();
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        backGroundModel.copyTo(mask);
+        mask = grabCutWithMask(input, mask);
+        log("Stop Grabcut ... ");
+        log("Time :" + (System.currentTimeMillis() - start));
+        return new Mat[]{mergeImageAndMask(copyOfOriginal, mask)};
+    }
+
+
+    public Mat[] tobiModel_Upgrade(Mat input, MatOfKeyPoint surfKeyPoints, Mat flow, double eps, int minP) {
+        frameCounter++;
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
+        log("Matching previous Frame to Current frame... ");
+        long start = System.currentTimeMillis();
+        //init - set all key points to class 0
+        if (!initBackgroundModel) {
+            initBackgroundModel(input, surfKeyPoints);
+            return new Mat[]{input, input, input};
+        }
+
+        //use key point detector to get background point
+        log("Matching previous Frame to Current frame... ");
+        FlannBasedMatcher matcher = new FlannBasedMatcher();
+        Mat currentFrameDescriptors = new Mat();
+        surf.compute(input, surfKeyPoints, currentFrameDescriptors);
+        MatOfDMatch matches = new MatOfDMatch();
+        matcher.match(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches);
+        //-- Quick calculation of max and min distances between key points
+        ArrayList<DMatch> goodMatches = calculateGoodMatches(matches);
+
+        log("Update background keypoints list... ");
+        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all((byte) Imgproc.GC_PR_BGD));
+
+        log("Frame counter: " + frameCounter);
+        List<KeyPoint> keyPoints = surfKeyPoints.toList();
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, (byte) Imgproc.GC_PR_FGD);
+            keyPoint.class_id = 0;
+        }
+        ArrayList<Integer> good_indexes = new ArrayList<>();
+        for (int i = 0; i < goodMatches.size(); i++) {
+            DMatch dMatch = goodMatches.get(i);
+            good_indexes.add(dMatch.queryIdx);
+            KeyPoint keyPointQuery = keyPoints.get(dMatch.queryIdx);
+            KeyPoint keyPointTrain = backgroundModelTobi.getKeypoint(dMatch.trainIdx);
+
+            //if key point is in background list then update his class
+            int current_class_id = keyPointTrain.class_id;
+            current_class_id += 1;
+            keyPointTrain.class_id = current_class_id;
+            keyPointQuery.class_id = current_class_id;
+
+            if (euclideandistance(keyPointQuery, keyPointTrain) > 10.0) {
+                //if (Math.abs(flow.ptr((int) keyPointQuery.pt().y(), (int) keyPointQuery.pt().x()).get(0)) > 20) {
+                keyPointTrain.class_id = 0;
+            }
+
+            //update new position for background model
+            keyPointTrain.pt.x = keyPointQuery.pt.x;
+            keyPointTrain.pt.y = keyPointQuery.pt.y;
+
+            if (keyPointTrain.class_id > 0) {
+                mask.put((int) keyPointTrain.pt.y, (int) keyPointTrain.pt.x, Imgproc.GC_PR_BGD);
+            } else {
+                mask.put((int) keyPointTrain.pt.y, (int) keyPointTrain.pt.x, Imgproc.GC_PR_FGD);
+            }
+
+            String text = "";
+
+            text += keyPointTrain.class_id;
+
+            Imgproc.putText(copyOfOriginal,
+                    text,
+                    new Point((int) keyPointTrain.pt.x, (int) keyPointTrain.pt.y),
+                    1, 2.0,
+                    new Scalar(0, 0, 255, 0));
+        }
+
+        for (int i = 0; i < keyPoints.size(); i++) {
+            // if the surf point is NOT in background model then add them into
+            if (!good_indexes.contains(i)) {
+                try {
+                    backgroundModelTobi.addNewKeyPointAndDescriptors(keyPoints.get(i), currentFrameDescriptors.row(i));
+                } catch (KeyPointsAndFeaturesVector.KeyPointsAndFeaturesVectorException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+/*
+        log("Build mask image for testing...");
+        for (int y = 0; y < mask.rows(); y++)
+            for (int x = 0; x < mask.cols(); x++) {
+                opencv_core.Scalar scalar;
+                if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_BGD) {
+                    scalar = new opencv_core.Scalar(0, 0, 0, 0);
+                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_PR_BGD) {
+                    continue;
+                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_PR_FGD) {
+                    scalar = new opencv_core.Scalar(126, 126, 126, 0);
+                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_FGD) {
+                    scalar = new opencv_core.Scalar(255, 255, 255, 0);
+                } else {
+                    continue;
+                }
+                opencv_imgproc.circle(copyOfOriginal,
+                        new opencv_core.Point(x, y),
+                        5,
+                        scalar, -5, 4, 0);
+            }
+*/
+        log("Clustering...");
+        Dataset data = Clustering.generateDatasetFrom_X_Y_Time(surfKeyPoints, mask);
+        Clustering.My_OPTICS myOptics = new Clustering.My_OPTICS(eps, minP);
+        Dataset[] cluster = myOptics.cluster(data);
+        Scalar[] colors = new Scalar[]{
+                new Scalar(255, 0, 0, 0),
+                new Scalar(0, 255, 0, 0),
+                new Scalar(0, 0, 255, 0),
+                new Scalar(255, 255, 0, 0),
+                new Scalar(0, 255, 255, 0)};
+        copyOfOriginal = Clustering.drawClusters(copyOfOriginal, cluster, colors);
+        Mat currentFrame = new Mat();
+        input.copyTo(currentFrame);
+        log("Start grabcutting...");
+        mask = grabCutWithMask(input, mask);
+        Mat img_matches = new Mat();
+        MatOfDMatch good_matches_Mat = new MatOfDMatch();
+        good_matches_Mat.fromList(goodMatches);
+        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, previousKeyPoint, good_matches_Mat, img_matches);
+        //update previous values
+        input.copyTo(previousFrame);
+        surfKeyPoints.copyTo(previousKeyPoint);
+        currentFrameDescriptors.copyTo(previousFrameDescriptors);
+        log("Finished Tobi");
+        log("Time: " + (System.currentTimeMillis() - start));
+        return new Mat[]{mergeImageAndMask(input, mask), img_matches, copyOfOriginal};
+    }
+
+    private void initBackgroundModel(Mat input, MatOfKeyPoint surfKeyPoints) {
+        input.copyTo(previousFrame);
+        surf.compute(previousFrame, surfKeyPoints, previousFrameDescriptors);
+        surfKeyPoints.copyTo(previousKeyPoint);
+        List<KeyPoint> keyPoints = surfKeyPoints.toList();
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            keyPoint.class_id = 0;
+        }
+        backgroundModelTobi = new KeyPointsAndFeaturesVector(surfKeyPoints, previousFrameDescriptors);
+        initBackgroundModel = true;
+    }
+
+    private double euclideandistance(KeyPoint keyPoint1, KeyPoint keyPoint2) {
+        return Math.sqrt(Math.pow(keyPoint1.pt.x - keyPoint2.pt.x, 2) + Math.pow(keyPoint1.pt.y - keyPoint2.pt.y, 2));
+    }
+
+    private Mat mergeImageAndMask(Mat image, Mat mask) {
+        Mat newImg = new Mat();
+        image.copyTo(newImg);
+        for (int y = 0; y < newImg.rows(); y++)
+            for (int x = 0; x < newImg.cols(); x++) {
+                double maskLabel = mask.get(y, x)[0];
+                if (maskLabel == 2 || maskLabel == 0) {
+                    newImg.put(y, x, new byte[]{0, 0, 0});
+                }
+            }
+        return newImg;
+    }
+
+    private Mat grabCutWithMask(Mat input, Mat mask) {
+        Mat bgModel = new Mat(new Size(65, 1), CvType.CV_64FC1, Scalar.all(0));
+        Mat fgModel = new Mat(new Size(65, 1), CvType.CV_64FC1, Scalar.all(0));
+        Imgproc.grabCut(input, mask,
+                new Rect(20, 20, input.cols() - 20, input.rows() - 20),
+                bgModel, fgModel, 5,
+                Imgproc.GC_INIT_WITH_MASK);
+        return mask;
+    }
+
+    private ArrayList<DMatch> calculateGoodMatches(MatOfDMatch matches) {
+        double max_dist = 0;
+        double min_dist = 100;
+        //-- Quick calculation of max and min distances between key points
+        List<DMatch> dMatches = matches.toList();
+        for (int i = 0; i < dMatches.size(); i++) {
+            double dist = dMatches.get(i).distance;
+            if (dist < min_dist) min_dist = dist;
+            if (dist > max_dist) max_dist = dist;
+        }
+
+        ArrayList<DMatch> goodMatches = new ArrayList<>();
+        for (int i = 0; i < dMatches.size(); i++) {
+            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.02)) {
+                goodMatches.add(dMatches.get(i));
+            }
+        }
+        return goodMatches;
+    }
+
+    private void log(Object o) {
+        System.out.println(o);
+    }
+}
