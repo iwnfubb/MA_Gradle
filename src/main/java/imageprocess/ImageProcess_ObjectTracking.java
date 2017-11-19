@@ -396,11 +396,13 @@ public class ImageProcess_ObjectTracking {
 
         //use key point detector to get background point
         log("Matching previous Frame to Current frame... ");
-        FlannBasedMatcher matcher = new FlannBasedMatcher();
+        FlannBasedMatcher matcher = FlannBasedMatcher.create();
         Mat currentFrameDescriptors = new Mat();
-        surf.compute(input, surfKeyPoints, currentFrameDescriptors);
+        //surf.compute(input, surfKeyPoints, currentFrameDescriptors);
+        surf.detectAndCompute(input, new Mat(), surfKeyPoints, currentFrameDescriptors);
         MatOfDMatch matches = new MatOfDMatch();
-        matcher.match(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches);
+        //matcher.match(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches);
+        matcher.match(currentFrameDescriptors, previousFrameDescriptors, matches);
         //-- Quick calculation of max and min distances between key points
         ArrayList<DMatch> goodMatches = calculateGoodMatches(matches);
 
@@ -453,7 +455,7 @@ public class ImageProcess_ObjectTracking {
                     new Scalar(0, 0, 255, 0));
         }
 
-        for (int i = 0; i < keyPoints.size(); i++) {
+            for (int i = 0; i < keyPoints.size(); i++) {
             // if the surf point is NOT in background model then add them into
             if (!good_indexes.contains(i)) {
                 try {
@@ -499,7 +501,7 @@ public class ImageProcess_ObjectTracking {
         Mat currentFrame = new Mat();
         input.copyTo(currentFrame);
         log("Start grabcutting...");
-        mask = grabCutWithMask(input, mask);
+        //mask = grabCutWithMask(input, mask);
         Mat img_matches = new Mat();
         MatOfDMatch good_matches_Mat = new MatOfDMatch();
         good_matches_Mat.fromList(goodMatches);
@@ -515,7 +517,7 @@ public class ImageProcess_ObjectTracking {
 
     private void initBackgroundModel(Mat input, MatOfKeyPoint surfKeyPoints) {
         input.copyTo(previousFrame);
-        surf.compute(previousFrame, surfKeyPoints, previousFrameDescriptors);
+        surf.detectAndCompute(previousFrame, new Mat(), surfKeyPoints, previousFrameDescriptors);
         surfKeyPoints.copyTo(previousKeyPoint);
         List<KeyPoint> keyPoints = surfKeyPoints.toList();
         for (int i = 0; i < keyPoints.size(); i++) {
