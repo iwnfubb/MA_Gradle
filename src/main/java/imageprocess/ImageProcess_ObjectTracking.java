@@ -394,21 +394,37 @@ public class ImageProcess_ObjectTracking {
 
         //use key point detector to get background point
         log("Matching previous Frame to Current frame... ");
-        BFMatcher matcher = BFMatcher.create();
+        BFMatcher bruteForceMatcher = BFMatcher.create();
         Mat currentFrameDescriptors = new Mat();
         surf.detectAndCompute(input, new Mat(), surfKeyPoints, currentFrameDescriptors);
-        List<MatOfDMatch> matches = new ArrayList<>();
-        matcher.knnMatch(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches, 1);
+        List<MatOfDMatch> allMatches = new ArrayList<>();
+        int k_neighbor = 2;
+        bruteForceMatcher.knnMatch(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), allMatches, k_neighbor);
         //-- Quick calculation of max and min distances between key points
-        MatOfDMatch matOfDMatch = new MatOfDMatch();
-        for (int i = 0; i < matches.size(); i++) {
-            matOfDMatch.push_back(matches.get(i));
+        MatOfDMatch matOfAllMatches = new MatOfDMatch();
+        ArrayList<DMatch> bestMatches = new ArrayList<>();
+        for (int i = 0; i < allMatches.size(); i++) {
+            //matOfAllMatches.push_back(allMatches.get(i));
+            List<DMatch> list = allMatches.get(i).toList();
+            if (list.get(0).distance < 0.8 * list.get(1).distance) {
+                bestMatches.add(list.get(0));
+            }
         }
-        ArrayList<DMatch> goodMatches = calculateGoodMatches(matOfDMatch);
+        //ArrayList<DMatch> bestMatches = calculateGoodMatches(matOfAllMatches);
+
+        //draw best matches to test
+        Mat currentFrame = new Mat();
+        input.copyTo(currentFrame);
+        Mat img_matches = new Mat();
+        MatOfDMatch best_matches_Mat = new MatOfDMatch();
+        best_matches_Mat.fromList(bestMatches);
+        log("Best matches : " + bestMatches.size());
+        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, backgroundModelTobi.getMatOfKeyPoint(), best_matches_Mat, img_matches);
 
         log("Update background keypoints list... ");
 
         log("Frame counter: " + frameCounter);
+        //set class of all surf point in current frame to 0
         List<KeyPoint> keyPoints = surfKeyPoints.toList();
         for (int i = 0; i < keyPoints.size(); i++) {
             KeyPoint keyPoint = keyPoints.get(i);
@@ -416,31 +432,32 @@ public class ImageProcess_ObjectTracking {
         }
         surfKeyPoints.fromList(keyPoints);
 
+        //compare current surf and background model
         ArrayList<Integer> good_indexes = new ArrayList<>();
-        for (int i = 0; i < goodMatches.size(); i++) {
-            DMatch dMatch = goodMatches.get(i);
+        for (int i = 0; i < bestMatches.size(); i++) {
+            DMatch dMatch = bestMatches.get(i);
             good_indexes.add(dMatch.queryIdx);
             KeyPoint keyPointQuery = keyPoints.get(dMatch.queryIdx);
             KeyPoint keyPointTrain = backgroundModelTobi.getKeypoint(dMatch.trainIdx);
 
             //if key point is in background list and its position changed then update his class
             int current_class_id = keyPointTrain.class_id;
-            if (euclideandistance(keyPointQuery, keyPointTrain) > 10.0) {
+            if (euclideandistance(keyPointQuery, keyPointTrain) > 100.0) {
                 //if (Math.abs(flow.ptr((int) keyPointQuery.pt().y(), (int) keyPointQuery.pt().x()).get(0)) > 20) {
                 current_class_id += 1;
             }
 
             //update new position for background model
             backgroundModelTobi.getMatOfKeyPoint().put(dMatch.trainIdx, 0,
-                    new double[]{keyPointQuery.pt.x, keyPointQuery.pt.y,
-                            keyPointQuery.size, keyPointQuery.angle, keyPointQuery.response, keyPointQuery.octave,
-                            current_class_id});
+                    keyPointQuery.pt.x, keyPointQuery.pt.y,
+                    keyPointQuery.size, keyPointQuery.angle, keyPointQuery.response, keyPointQuery.octave,
+                    current_class_id);
 
         }
 
         log("Create image with background model for testing ");
         List<KeyPoint> keyPointsListBackground = backgroundModelTobi.getMatOfKeyPoint().toList();
-        for (int i = 0 ; i < keyPointsListBackground.size(); i++){
+        for (int i = 0; i < keyPointsListBackground.size(); i++) {
             if (keyPointsListBackground.get(i).class_id == 0) {
                 Imgproc.circle(copyOfOriginal,
                         new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
@@ -449,7 +466,7 @@ public class ImageProcess_ObjectTracking {
             }
         }
 
-        for (int i = 0 ; i < keyPointsListBackground.size(); i++){
+        for (int i = 0; i < keyPointsListBackground.size(); i++) {
             if (keyPointsListBackground.get(i).class_id > 0) {
                 Imgproc.circle(copyOfOriginal,
                         new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
@@ -513,14 +530,9 @@ public class ImageProcess_ObjectTracking {
                 new Scalar(255, 255, 0, 0),
                 new Scalar(0, 255, 255, 0)};
         copyOfOriginal = Clustering.drawClusters(copyOfOriginal, cluster, colors);
-        Mat currentFrame = new Mat();
-        input.copyTo(currentFrame);
         log("Start grabcutting...");
         //mask = grabCutWithMask(input, mask);
-        Mat img_matches = new Mat();
-        MatOfDMatch good_matches_Mat = new MatOfDMatch();
-        good_matches_Mat.fromList(goodMatches);
-        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, backgroundModelTobi.getMatOfKeyPoint(), good_matches_Mat, img_matches);
+
         //update previous values
         input.copyTo(previousFrame);
         surfKeyPoints.copyTo(previousKeyPoint);
@@ -601,7 +613,7 @@ public class ImageProcess_ObjectTracking {
 
         ArrayList<DMatch> goodMatches = new ArrayList<>();
         for (int i = 0; i < dMatches.size(); i++) {
-            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.002)) {
+            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.0002)) {
                 goodMatches.add(dMatches.get(i));
             }
         }
