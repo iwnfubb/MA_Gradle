@@ -7,16 +7,14 @@ import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.Instance;
 import net.sf.javaml.core.SparseInstance;
 import org.opencv.core.*;
+import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.Features2d;
-import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.xfeatures2d.SURF;
 import utils.KeyPointsAndFeaturesVector;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -273,7 +271,7 @@ public class ImageProcess_ObjectTracking {
         input.copyTo(copyOfOriginal);
         float width = copyOfOriginal.width();
         float height = copyOfOriginal.height();
-        Mat samples = new Mat(new Size(2, (int) keyPoints.size()), CvType.CV_64FC1);
+        Mat samples = new Mat(new Size(2, keyPoints.size()), CvType.CV_64FC1);
         for (int i = 0; i < keyPoints.size(); i++) {
             KeyPoint keyPoint = keyPoints.get(i);
             double x = keyPoint.pt.x;
@@ -396,26 +394,28 @@ public class ImageProcess_ObjectTracking {
 
         //use key point detector to get background point
         log("Matching previous Frame to Current frame... ");
-        FlannBasedMatcher matcher = FlannBasedMatcher.create();
+        BFMatcher matcher = BFMatcher.create();
         Mat currentFrameDescriptors = new Mat();
-        //surf.compute(input, surfKeyPoints, currentFrameDescriptors);
         surf.detectAndCompute(input, new Mat(), surfKeyPoints, currentFrameDescriptors);
-        MatOfDMatch matches = new MatOfDMatch();
-        //matcher.match(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches);
-        matcher.match(currentFrameDescriptors, previousFrameDescriptors, matches);
+        List<MatOfDMatch> matches = new ArrayList<>();
+        matcher.knnMatch(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), matches, 1);
         //-- Quick calculation of max and min distances between key points
-        ArrayList<DMatch> goodMatches = calculateGoodMatches(matches);
+        MatOfDMatch matOfDMatch = new MatOfDMatch();
+        for (int i = 0; i < matches.size(); i++) {
+            matOfDMatch.push_back(matches.get(i));
+        }
+        ArrayList<DMatch> goodMatches = calculateGoodMatches(matOfDMatch);
 
         log("Update background keypoints list... ");
-        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all((byte) Imgproc.GC_PR_BGD));
 
         log("Frame counter: " + frameCounter);
         List<KeyPoint> keyPoints = surfKeyPoints.toList();
         for (int i = 0; i < keyPoints.size(); i++) {
             KeyPoint keyPoint = keyPoints.get(i);
-            mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, (byte) Imgproc.GC_PR_FGD);
             keyPoint.class_id = 0;
         }
+        surfKeyPoints.fromList(keyPoints);
+
         ArrayList<Integer> good_indexes = new ArrayList<>();
         for (int i = 0; i < goodMatches.size(); i++) {
             DMatch dMatch = goodMatches.get(i);
@@ -423,39 +423,53 @@ public class ImageProcess_ObjectTracking {
             KeyPoint keyPointQuery = keyPoints.get(dMatch.queryIdx);
             KeyPoint keyPointTrain = backgroundModelTobi.getKeypoint(dMatch.trainIdx);
 
-            //if key point is in background list then update his class
+            //if key point is in background list and its position changed then update his class
             int current_class_id = keyPointTrain.class_id;
-            current_class_id += 1;
-            keyPointTrain.class_id = current_class_id;
-            keyPointQuery.class_id = current_class_id;
-
             if (euclideandistance(keyPointQuery, keyPointTrain) > 10.0) {
                 //if (Math.abs(flow.ptr((int) keyPointQuery.pt().y(), (int) keyPointQuery.pt().x()).get(0)) > 20) {
-                keyPointTrain.class_id = 0;
+                current_class_id += 1;
             }
 
             //update new position for background model
-            keyPointTrain.pt.x = keyPointQuery.pt.x;
-            keyPointTrain.pt.y = keyPointQuery.pt.y;
+            backgroundModelTobi.getMatOfKeyPoint().put(dMatch.trainIdx, 0,
+                    new double[]{keyPointQuery.pt.x, keyPointQuery.pt.y,
+                            keyPointQuery.size, keyPointQuery.angle, keyPointQuery.response, keyPointQuery.octave,
+                            current_class_id});
 
-            if (keyPointTrain.class_id > 0) {
-                mask.put((int) keyPointTrain.pt.y, (int) keyPointTrain.pt.x, Imgproc.GC_PR_BGD);
-            } else {
-                mask.put((int) keyPointTrain.pt.y, (int) keyPointTrain.pt.x, Imgproc.GC_PR_FGD);
-            }
-
-            String text = "";
-
-            text += keyPointTrain.class_id;
-
-            Imgproc.putText(copyOfOriginal,
-                    text,
-                    new Point((int) keyPointTrain.pt.x, (int) keyPointTrain.pt.y),
-                    1, 2.0,
-                    new Scalar(0, 0, 255, 0));
         }
 
-            for (int i = 0; i < keyPoints.size(); i++) {
+        log("Create image with background model for testing ");
+        List<KeyPoint> keyPointsListBackground = backgroundModelTobi.getMatOfKeyPoint().toList();
+        for (int i = 0 ; i < keyPointsListBackground.size(); i++){
+            if (keyPointsListBackground.get(i).class_id == 0) {
+                Imgproc.circle(copyOfOriginal,
+                        new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
+                        5,
+                        new Scalar(0, 0, 0), -5, 4, 0);
+            }
+        }
+
+        for (int i = 0 ; i < keyPointsListBackground.size(); i++){
+            if (keyPointsListBackground.get(i).class_id > 0) {
+                Imgproc.circle(copyOfOriginal,
+                        new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
+                        5,
+                        new Scalar(255, 255, 255), -5, 4, 0);
+            }
+        }
+
+        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all((byte) Imgproc.GC_PR_BGD));
+        List<KeyPoint> backgroundKeyPoints = backgroundModelTobi.getMatOfKeyPoint().toList();
+        for (int i = 0; i < backgroundKeyPoints.size(); i++) {
+            KeyPoint keyPoint = backgroundKeyPoints.get(i);
+            if (keyPoint.class_id > 0) {
+                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_FGD);
+            } else {
+                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_BGD);
+            }
+        }
+
+        for (int i = 0; i < keyPoints.size(); i++) {
             // if the surf point is NOT in background model then add them into
             if (!good_indexes.contains(i)) {
                 try {
@@ -490,7 +504,8 @@ public class ImageProcess_ObjectTracking {
         log("Clustering...");
         Dataset data = Clustering.generateDatasetFrom_X_Y_Time(surfKeyPoints, mask);
         Clustering.My_OPTICS myOptics = new Clustering.My_OPTICS(eps, minP);
-        Dataset[] cluster = myOptics.cluster(data);
+        //Dataset[] cluster = myOptics.cluster(data);
+        Dataset[] cluster = new Dataset[0];
         Scalar[] colors = new Scalar[]{
                 new Scalar(255, 0, 0, 0),
                 new Scalar(0, 255, 0, 0),
@@ -505,26 +520,28 @@ public class ImageProcess_ObjectTracking {
         Mat img_matches = new Mat();
         MatOfDMatch good_matches_Mat = new MatOfDMatch();
         good_matches_Mat.fromList(goodMatches);
-        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, previousKeyPoint, good_matches_Mat, img_matches);
+        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, backgroundModelTobi.getMatOfKeyPoint(), good_matches_Mat, img_matches);
         //update previous values
         input.copyTo(previousFrame);
         surfKeyPoints.copyTo(previousKeyPoint);
         currentFrameDescriptors.copyTo(previousFrameDescriptors);
         log("Finished Tobi");
         log("Time: " + (System.currentTimeMillis() - start));
-        return new Mat[]{mergeImageAndMask(input, mask), img_matches, copyOfOriginal};
+        return new Mat[]{drawMaskPointToImage(input, mask), img_matches, copyOfOriginal};
     }
 
     private void initBackgroundModel(Mat input, MatOfKeyPoint surfKeyPoints) {
         input.copyTo(previousFrame);
         surf.detectAndCompute(previousFrame, new Mat(), surfKeyPoints, previousFrameDescriptors);
         surfKeyPoints.copyTo(previousKeyPoint);
-        List<KeyPoint> keyPoints = surfKeyPoints.toList();
+        List<KeyPoint> keyPoints = previousKeyPoint.toList();
         for (int i = 0; i < keyPoints.size(); i++) {
             KeyPoint keyPoint = keyPoints.get(i);
             keyPoint.class_id = 0;
         }
-        backgroundModelTobi = new KeyPointsAndFeaturesVector(surfKeyPoints, previousFrameDescriptors);
+        MatOfKeyPoint newKeyPoints = new MatOfKeyPoint();
+        newKeyPoints.fromList(keyPoints);
+        backgroundModelTobi = new KeyPointsAndFeaturesVector(newKeyPoints, previousFrameDescriptors);
         initBackgroundModel = true;
     }
 
@@ -540,6 +557,22 @@ public class ImageProcess_ObjectTracking {
                 double maskLabel = mask.get(y, x)[0];
                 if (maskLabel == 2 || maskLabel == 0) {
                     newImg.put(y, x, new byte[]{0, 0, 0});
+                }
+            }
+        return newImg;
+    }
+
+    private Mat drawMaskPointToImage(Mat image, Mat mask) {
+        Mat newImg = new Mat();
+        image.copyTo(newImg);
+        for (int y = 0; y < newImg.rows(); y++)
+            for (int x = 0; x < newImg.cols(); x++) {
+                double maskLabel = mask.get(y, x)[0];
+                if (maskLabel == 1 || maskLabel == 3) {
+                    Imgproc.circle(newImg,
+                            new Point(x, y),
+                            5,
+                            new Scalar(255, 255, 255), -5, 4, 0);
                 }
             }
         return newImg;
@@ -568,7 +601,7 @@ public class ImageProcess_ObjectTracking {
 
         ArrayList<DMatch> goodMatches = new ArrayList<>();
         for (int i = 0; i < dMatches.size(); i++) {
-            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.02)) {
+            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.002)) {
                 goodMatches.add(dMatches.get(i));
             }
         }

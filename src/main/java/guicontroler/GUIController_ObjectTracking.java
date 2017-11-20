@@ -80,6 +80,7 @@ public class GUIController_ObjectTracking {
         ini();
         if (!this.cameraActive) {
             // start the video capture
+            //this.capture.open("test.mp4");
             this.capture.open(cameraId);
 
             // is the video stream available?
