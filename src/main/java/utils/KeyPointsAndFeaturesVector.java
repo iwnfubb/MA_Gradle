@@ -25,7 +25,7 @@ public class KeyPointsAndFeaturesVector {
     public void addNewKeyPointAndDescriptors(KeyPoint keyPoint, Mat descriptor) throws KeyPointsAndFeaturesVectorException {
         if (descriptor.cols() == descriptors.cols()) {
             Mat keypointMat = new Mat(1, 1, CvType.CV_32FC(7));
-            keypointMat.put(0,0, keyPoint.pt.x, keyPoint.pt.y, keyPoint.size, keyPoint.angle, keyPoint.response, keyPoint.octave, keyPoint.class_id);
+            keypointMat.put(0, 0, keyPoint.pt.x, keyPoint.pt.y, keyPoint.size, keyPoint.angle, keyPoint.response, keyPoint.octave, keyPoint.class_id);
             matOfKeyPoint.push_back(keypointMat);
             descriptors.push_back(descriptor);
         } else {

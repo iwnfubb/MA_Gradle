@@ -1,9 +1,11 @@
 package guicontroler;
 
 import imageprocess.ImageProcess_ObjectTracking;
+import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
 import org.opencv.features2d.Features2d;
+import org.opencv.imgproc.Imgproc;
 import utils.Utils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -80,7 +82,14 @@ public class GUIController_ObjectTracking {
         ini();
         if (!this.cameraActive) {
             // start the video capture
-            this.capture.open("test.mp4");
+
+            this.capture.open("video.mp4");
+            Mat tictacImage = new Mat();
+            capture.read(tictacImage);
+            Imgproc.cvtColor(tictacImage, tictacImage, Imgproc.COLOR_BGR2GRAY);
+            imgProcess.tictacImage = tictacImage;
+            imgProcess.initTicTacImage();
+
             //this.capture.open(cameraId);
 
             // is the video stream available?

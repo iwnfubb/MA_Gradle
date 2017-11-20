@@ -7,8 +7,8 @@ import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.Instance;
 import net.sf.javaml.core.SparseInstance;
 import org.opencv.core.*;
-import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.Features2d;
+import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.videoio.VideoCapture;
@@ -32,11 +32,19 @@ public class ImageProcess_ObjectTracking {
     private KeyPointsAndFeaturesVector backgroundModelTobi;
     private Mat backGroundModel;
     boolean initBackgroundModel = false;
+    public Mat tictacImage;
+    MatOfKeyPoint tictacKeyPoint = new MatOfKeyPoint();
+    Mat tictacDescriptors = new Mat();
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
         this.capture = capture;
         this.surf = SURF.create();
         this.surf.setUpright(false);
+    }
+
+    public void initTicTacImage() {
+        tictacKeyPoint = getSURFKeyPoint(tictacImage, new Mat());
+        surf.detectAndCompute(tictacImage, new Mat(), tictacKeyPoint, tictacDescriptors);
     }
 
     public Mat getOriginalFrame() {
@@ -382,8 +390,7 @@ public class ImageProcess_ObjectTracking {
 
     public Mat[] tobiModel_Upgrade(Mat input, MatOfKeyPoint surfKeyPoints, Mat flow, double eps, int minP) {
         frameCounter++;
-        Mat copyOfOriginal = new Mat();
-        input.copyTo(copyOfOriginal);
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2GRAY);
         log("Matching previous Frame to Current frame... ");
         long start = System.currentTimeMillis();
         //init - set all key points to class 0
@@ -394,69 +401,116 @@ public class ImageProcess_ObjectTracking {
 
         //use key point detector to get background point
         log("Matching previous Frame to Current frame... ");
-        BFMatcher bruteForceMatcher = BFMatcher.create();
         Mat currentFrameDescriptors = new Mat();
         surf.detectAndCompute(input, new Mat(), surfKeyPoints, currentFrameDescriptors);
-        List<MatOfDMatch> allMatches = new ArrayList<>();
-        int k_neighbor = 2;
-        bruteForceMatcher.knnMatch(currentFrameDescriptors, backgroundModelTobi.getDescriptors(), allMatches, k_neighbor);
-        //-- Quick calculation of max and min distances between key points
+
+        List<MatOfDMatch> allMatches = matchingFeatures(currentFrameDescriptors);
+        //quick calculation of max and min distances between key points
+        ArrayList<DMatch> bestMatches = findBestMatches(allMatches);
         MatOfDMatch matOfAllMatches = new MatOfDMatch();
-        ArrayList<DMatch> bestMatches = new ArrayList<>();
-        for (int i = 0; i < allMatches.size(); i++) {
-            //matOfAllMatches.push_back(allMatches.get(i));
-            List<DMatch> list = allMatches.get(i).toList();
-            if (list.get(0).distance < 0.8 * list.get(1).distance) {
-                bestMatches.add(list.get(0));
-            }
-        }
-        //ArrayList<DMatch> bestMatches = calculateGoodMatches(matOfAllMatches);
+        matOfAllMatches.fromList(bestMatches);
+        bestMatches = calculateGoodMatches(matOfAllMatches);
+        Mat img_matches = drawBestMatching(input, surfKeyPoints, bestMatches);
 
-        //draw best matches to test
-        Mat currentFrame = new Mat();
-        input.copyTo(currentFrame);
-        Mat img_matches = new Mat();
-        MatOfDMatch best_matches_Mat = new MatOfDMatch();
-        best_matches_Mat.fromList(bestMatches);
-        log("Best matches : " + bestMatches.size());
-        Features2d.drawMatches(currentFrame, surfKeyPoints, previousFrame, backgroundModelTobi.getMatOfKeyPoint(), best_matches_Mat, img_matches);
-
-        log("Update background keypoints list... ");
 
         log("Frame counter: " + frameCounter);
         //set class of all surf point in current frame to 0
-        List<KeyPoint> keyPoints = surfKeyPoints.toList();
-        for (int i = 0; i < keyPoints.size(); i++) {
-            KeyPoint keyPoint = keyPoints.get(i);
-            keyPoint.class_id = 0;
-        }
-        surfKeyPoints.fromList(keyPoints);
+        List<KeyPoint> keyPoints = setClassToZero(surfKeyPoints);
+        ArrayList<Integer> good_indexes = updateBackgroundModelAndReturnsGoodIndexes(bestMatches, keyPoints);
 
-        //compare current surf and background model
-        ArrayList<Integer> good_indexes = new ArrayList<>();
-        for (int i = 0; i < bestMatches.size(); i++) {
-            DMatch dMatch = bestMatches.get(i);
-            good_indexes.add(dMatch.queryIdx);
-            KeyPoint keyPointQuery = keyPoints.get(dMatch.queryIdx);
-            KeyPoint keyPointTrain = backgroundModelTobi.getKeypoint(dMatch.trainIdx);
-
-            //if key point is in background list and its position changed then update his class
-            int current_class_id = keyPointTrain.class_id;
-            if (euclideandistance(keyPointQuery, keyPointTrain) > 100.0) {
-                //if (Math.abs(flow.ptr((int) keyPointQuery.pt().y(), (int) keyPointQuery.pt().x()).get(0)) > 20) {
-                current_class_id += 1;
-            }
-
-            //update new position for background model
-            backgroundModelTobi.getMatOfKeyPoint().put(dMatch.trainIdx, 0,
-                    keyPointQuery.pt.x, keyPointQuery.pt.y,
-                    keyPointQuery.size, keyPointQuery.angle, keyPointQuery.response, keyPointQuery.octave,
-                    current_class_id);
-
-        }
 
         log("Create image with background model for testing ");
         List<KeyPoint> keyPointsListBackground = backgroundModelTobi.getMatOfKeyPoint().toList();
+        Mat maskOnBackgroundModel = markClassOnBackgroundModel(input, keyPointsListBackground);
+
+        Mat mask = createMaskFromBackgroundModel(input);
+
+        addUnmatchedSurfToBackgroundModel(currentFrameDescriptors, keyPoints, good_indexes);
+
+        //buildMaskImageForTesting(maskOnBackgroundModel, mask);
+
+        log("Clustering...");
+        maskOnBackgroundModel = clusteringAndDraw(surfKeyPoints, eps, minP, maskOnBackgroundModel, mask);
+        log("Start grabcutting...");
+        //mask = grabCutWithMask(input, mask);
+
+        //update previous values
+        input.copyTo(previousFrame);
+        surfKeyPoints.copyTo(previousKeyPoint);
+        currentFrameDescriptors.copyTo(previousFrameDescriptors);
+        log("Finished Tobi");
+        log("Time: " + (System.currentTimeMillis() - start));
+        return new Mat[]{drawMaskPointToImage(input, mask), img_matches, maskOnBackgroundModel};
+    }
+
+    private void buildMaskImageForTesting(Mat maskOnBackgroundModel, Mat mask) {
+        log("Build mask image for testing...");
+        for (int y = 0; y < mask.rows(); y++)
+            for (int x = 0; x < mask.cols(); x++) {
+                Scalar scalar;
+                if (mask.get(y, x)[0] == Imgproc.GC_BGD) {
+                    scalar = new Scalar(0, 0, 0, 0);
+                } else if (mask.get(y, x)[0] == Imgproc.GC_PR_BGD) {
+                    continue;
+                } else if (mask.get(y, x)[0] == Imgproc.GC_PR_FGD) {
+                    scalar = new Scalar(126, 126, 126, 0);
+                } else if (mask.get(y, x)[0] == Imgproc.GC_FGD) {
+                    scalar = new Scalar(255, 255, 255, 0);
+                } else {
+                    continue;
+                }
+                Imgproc.circle(maskOnBackgroundModel,
+                        new Point(x, y),
+                        5,
+                        scalar, -5, 4, 0);
+            }
+    }
+
+    private Mat clusteringAndDraw(MatOfKeyPoint surfKeyPoints, double eps, int minP, Mat maskOnBackgroundModel, Mat mask) {
+        Dataset data = Clustering.generateDatasetFrom_X_Y_Time(surfKeyPoints, mask);
+        Clustering.My_OPTICS myOptics = new Clustering.My_OPTICS(eps, minP);
+        //Dataset[] cluster = myOptics.cluster(data);
+        Dataset[] cluster = new Dataset[0];
+        Scalar[] colors = new Scalar[]{
+                new Scalar(255, 0, 0, 0),
+                new Scalar(0, 255, 0, 0),
+                new Scalar(0, 0, 255, 0),
+                new Scalar(255, 255, 0, 0),
+                new Scalar(0, 255, 255, 0)};
+        maskOnBackgroundModel = Clustering.drawClusters(maskOnBackgroundModel, cluster, colors);
+        return maskOnBackgroundModel;
+    }
+
+    private void addUnmatchedSurfToBackgroundModel(Mat currentFrameDescriptors, List<KeyPoint> keyPoints, ArrayList<Integer> good_indexes) {
+        for (int i = 0; i < keyPoints.size(); i++) {
+            // if the surf point is NOT in background model then add them into
+            if (!good_indexes.contains(i)) {
+                try {
+                    backgroundModelTobi.addNewKeyPointAndDescriptors(keyPoints.get(i), currentFrameDescriptors.row(i));
+                } catch (KeyPointsAndFeaturesVector.KeyPointsAndFeaturesVectorException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private Mat createMaskFromBackgroundModel(Mat input) {
+        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all((byte) Imgproc.GC_PR_BGD));
+        List<KeyPoint> backgroundKeyPoints = backgroundModelTobi.getMatOfKeyPoint().toList();
+        for (int i = 0; i < backgroundKeyPoints.size(); i++) {
+            KeyPoint keyPoint = backgroundKeyPoints.get(i);
+            if (keyPoint.class_id > 0) {
+                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_FGD);
+            } else {
+                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_BGD);
+            }
+        }
+        return mask;
+    }
+
+    private Mat markClassOnBackgroundModel(Mat input, List<KeyPoint> keyPointsListBackground) {
+        Mat copyOfOriginal = new Mat();
+        input.copyTo(copyOfOriginal);
         for (int i = 0; i < keyPointsListBackground.size(); i++) {
             if (keyPointsListBackground.get(i).class_id == 0) {
                 Imgproc.circle(copyOfOriginal,
@@ -474,72 +528,75 @@ public class ImageProcess_ObjectTracking {
                         new Scalar(255, 255, 255), -5, 4, 0);
             }
         }
+        return copyOfOriginal;
+    }
 
-        Mat mask = new Mat(input.size(), CvType.CV_8UC1, Scalar.all((byte) Imgproc.GC_PR_BGD));
-        List<KeyPoint> backgroundKeyPoints = backgroundModelTobi.getMatOfKeyPoint().toList();
-        for (int i = 0; i < backgroundKeyPoints.size(); i++) {
-            KeyPoint keyPoint = backgroundKeyPoints.get(i);
-            if (keyPoint.class_id > 0) {
-                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_FGD);
-            } else {
-                mask.put((int) keyPoint.pt.y, (int) keyPoint.pt.x, Imgproc.GC_PR_BGD);
-            }
-        }
+    private ArrayList<Integer> updateBackgroundModelAndReturnsGoodIndexes(ArrayList<DMatch> bestMatches, List<KeyPoint> keyPoints) {
+        log("Update background keypoints list... ");
+        //compare current surf and background model
+        ArrayList<Integer> good_indexes = new ArrayList<>();
+        for (int i = 0; i < bestMatches.size(); i++) {
+            DMatch dMatch = bestMatches.get(i);
+            good_indexes.add(dMatch.queryIdx);
+            KeyPoint keyPointQuery = keyPoints.get(dMatch.queryIdx);
+            //KeyPoint keyPointTrain = backgroundModelTobi.getKeypoint(dMatch.trainIdx);
+            KeyPoint keyPointTrain = tictacKeyPoint.toList().get(dMatch.trainIdx);
 
-        for (int i = 0; i < keyPoints.size(); i++) {
-            // if the surf point is NOT in background model then add them into
-            if (!good_indexes.contains(i)) {
-                try {
-                    backgroundModelTobi.addNewKeyPointAndDescriptors(keyPoints.get(i), currentFrameDescriptors.row(i));
-                } catch (KeyPointsAndFeaturesVector.KeyPointsAndFeaturesVectorException e) {
-                    e.printStackTrace();
-                }
+            //if key point is in background list and its position changed then update his class
+            int current_class_id = keyPointTrain.class_id;
+            if (euclideandistance(keyPointQuery, keyPointTrain) > 100.0) {
+                //if (Math.abs(flow.ptr((int) keyPointQuery.pt().y(), (int) keyPointQuery.pt().x()).get(0)) > 20) {
+                current_class_id += 1;
             }
-        }
-/*
-        log("Build mask image for testing...");
-        for (int y = 0; y < mask.rows(); y++)
-            for (int x = 0; x < mask.cols(); x++) {
-                opencv_core.Scalar scalar;
-                if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_BGD) {
-                    scalar = new opencv_core.Scalar(0, 0, 0, 0);
-                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_PR_BGD) {
-                    continue;
-                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_PR_FGD) {
-                    scalar = new opencv_core.Scalar(126, 126, 126, 0);
-                } else if (mask.ptr(y, x).get(0) == opencv_imgproc.GC_FGD) {
-                    scalar = new opencv_core.Scalar(255, 255, 255, 0);
-                } else {
-                    continue;
-                }
-                opencv_imgproc.circle(copyOfOriginal,
-                        new opencv_core.Point(x, y),
-                        5,
-                        scalar, -5, 4, 0);
-            }
+
+            /*
+            //update new position for background model
+            backgroundModelTobi.getMatOfKeyPoint().put(dMatch.trainIdx, 0,
+                    keyPointQuery.pt.x, keyPointQuery.pt.y,
+                    keyPointQuery.size, keyPointQuery.angle, keyPointQuery.response, keyPointQuery.octave,
+                    current_class_id);
 */
-        log("Clustering...");
-        Dataset data = Clustering.generateDatasetFrom_X_Y_Time(surfKeyPoints, mask);
-        Clustering.My_OPTICS myOptics = new Clustering.My_OPTICS(eps, minP);
-        //Dataset[] cluster = myOptics.cluster(data);
-        Dataset[] cluster = new Dataset[0];
-        Scalar[] colors = new Scalar[]{
-                new Scalar(255, 0, 0, 0),
-                new Scalar(0, 255, 0, 0),
-                new Scalar(0, 0, 255, 0),
-                new Scalar(255, 255, 0, 0),
-                new Scalar(0, 255, 255, 0)};
-        copyOfOriginal = Clustering.drawClusters(copyOfOriginal, cluster, colors);
-        log("Start grabcutting...");
-        //mask = grabCutWithMask(input, mask);
+        }
+        return good_indexes;
+    }
 
-        //update previous values
-        input.copyTo(previousFrame);
-        surfKeyPoints.copyTo(previousKeyPoint);
-        currentFrameDescriptors.copyTo(previousFrameDescriptors);
-        log("Finished Tobi");
-        log("Time: " + (System.currentTimeMillis() - start));
-        return new Mat[]{drawMaskPointToImage(input, mask), img_matches, copyOfOriginal};
+    private List<KeyPoint> setClassToZero(MatOfKeyPoint surfKeyPoints) {
+        List<KeyPoint> keyPoints = surfKeyPoints.toList();
+        for (int i = 0; i < keyPoints.size(); i++) {
+            KeyPoint keyPoint = keyPoints.get(i);
+            keyPoint.class_id = 0;
+        }
+        surfKeyPoints.fromList(keyPoints);
+        return keyPoints;
+    }
+
+    private List<MatOfDMatch> matchingFeatures(Mat currentFrameDescriptors) {
+        FlannBasedMatcher bruteForceMatcher = FlannBasedMatcher.create();
+        List<MatOfDMatch> allMatches = new ArrayList<>();
+        int k_neighbor = 2;
+        bruteForceMatcher.knnMatch(currentFrameDescriptors, tictacDescriptors, allMatches, k_neighbor);
+        return allMatches;
+    }
+
+    private ArrayList<DMatch> findBestMatches(List<MatOfDMatch> allMatches) {
+        ArrayList<DMatch> bestMatches = new ArrayList<>();
+        for (int i = 0; i < allMatches.size(); i++) {
+            List<DMatch> list = allMatches.get(i).toList();
+            if (list.get(0).distance < 0.75 * list.get(1).distance) {
+                bestMatches.add(list.get(0));
+            }
+        }
+        return bestMatches;
+    }
+
+    private Mat drawBestMatching(Mat input, MatOfKeyPoint surfKeyPoints, ArrayList<DMatch> bestMatches) {
+        //draw best matches to test
+        Mat img_matches = new Mat();
+        MatOfDMatch best_matches_Mat = new MatOfDMatch();
+        best_matches_Mat.fromList(bestMatches);
+        log("Best matches : " + bestMatches.size());
+        Features2d.drawMatches(input, surfKeyPoints, tictacImage, tictacKeyPoint, best_matches_Mat, img_matches);
+        return img_matches;
     }
 
     private void initBackgroundModel(Mat input, MatOfKeyPoint surfKeyPoints) {
