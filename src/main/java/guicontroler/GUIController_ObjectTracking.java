@@ -125,7 +125,6 @@ public class GUIController_ObjectTracking {
                     if (opticalFlowActive.isSelected() && !gaussianBlurFrame.empty()) {
                         imgProcess.opticalFLow(gaussianBlurFrame).copyTo(flow);
                         Mat ofFrame = imgProcess.drawOpticalFlowToImage(gaussianBlurFrame, flow);
-                        flow.copyTo(previousFrameFlow);
                         Image mmgImageToShow = Utils.mat2Image(ofFrame);
                         updateImageView(opticalFlowView, mmgImageToShow);
                     }
@@ -150,7 +149,7 @@ public class GUIController_ObjectTracking {
                         Image mmgImageToShow = Utils.mat2Image(classificationFrame);
                         updateImageView(gmmMeansView, mmgImageToShow);
                     }
-                    if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty()) {
+                    if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty() && !flow.empty()) {
                         Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
@@ -162,6 +161,8 @@ public class GUIController_ObjectTracking {
                         }
 
                     }
+                    if (!flow.empty())
+                        flow.copyTo(previousFrameFlow);
                 };
 
                 this.timer = Executors.newSingleThreadScheduledExecutor();
