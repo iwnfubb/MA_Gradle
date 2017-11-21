@@ -72,6 +72,8 @@ public class GUIController_ObjectTracking {
     // the id of the camera to be used
     private static int cameraId = 0;
 
+    private Mat previousFrameFlow = new Mat();
+
     /**
      * The action triggered by pushing the button on the GUI
      *
@@ -83,12 +85,14 @@ public class GUIController_ObjectTracking {
         if (!this.cameraActive) {
             // start the video capture
 
-            this.capture.open("video.mp4");
-            Mat tictacImage = new Mat();
-            capture.read(tictacImage);
-            Imgproc.cvtColor(tictacImage, tictacImage, Imgproc.COLOR_BGR2GRAY);
-            imgProcess.tictacImage = tictacImage;
-            imgProcess.initTicTacImage();
+            //this.capture.open(cameraId);
+            this.capture.open("testtasse.mp4");
+            //this.capture.open("testbox.flv");
+            //Mat tictacImage = new Mat();
+            //capture.read(tictacImage);
+            //Imgproc.cvtColor(tictacImage, tictacImage, Imgproc.COLOR_BGR2GRAY);
+            //imgProcess.tictacImage = tictacImage;
+            //imgProcess.initTicTacImage();
 
             //this.capture.open(cameraId);
 
@@ -119,7 +123,9 @@ public class GUIController_ObjectTracking {
                     }
                     Mat flow = new Mat();
                     if (opticalFlowActive.isSelected() && !gaussianBlurFrame.empty()) {
-                        Mat ofFrame = imgProcess.opticalFLow(gaussianBlurFrame, flow);
+                        imgProcess.opticalFLow(gaussianBlurFrame).copyTo(flow);
+                        Mat ofFrame = imgProcess.drawOpticalFlowToImage(gaussianBlurFrame, flow);
+                        flow.copyTo(previousFrameFlow);
                         Image mmgImageToShow = Utils.mat2Image(ofFrame);
                         updateImageView(opticalFlowView, mmgImageToShow);
                     }
@@ -144,8 +150,8 @@ public class GUIController_ObjectTracking {
                         Image mmgImageToShow = Utils.mat2Image(classificationFrame);
                         updateImageView(gmmMeansView, mmgImageToShow);
                     }
-                    if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !flow.empty()) {
-                        Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, flow, eps, minP);
+                    if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty()) {
+                        Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
                         if (grabcutFrameAndMatches.length == 3) {
