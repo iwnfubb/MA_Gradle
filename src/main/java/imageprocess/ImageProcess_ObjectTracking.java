@@ -11,13 +11,17 @@ import org.opencv.features2d.Features2d;
 import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
+import org.opencv.objdetect.HOGDescriptor;
+import org.opencv.video.BackgroundSubtractorMOG2;
+import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.xfeatures2d.SURF;
-import sun.applet.Main;
 import utils.KeyPointsAndFeaturesVector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.stream.DoubleStream;
 
 import static org.opencv.video.Video.calcOpticalFlowFarneback;
 
@@ -33,6 +37,8 @@ public class ImageProcess_ObjectTracking {
     private KeyPointsAndFeaturesVector backgroundModelTobi;
     private Mat backGroundModel;
     boolean initBackgroundModel = false;
+    HOGDescriptor hog;
+    BackgroundSubtractorMOG2 mog2;
     //public Mat tictacImage;
     //MatOfKeyPoint tictacKeyPoint = new MatOfKeyPoint();
     //Mat tictacDescriptors = new Mat();
@@ -41,6 +47,15 @@ public class ImageProcess_ObjectTracking {
         this.capture = capture;
         this.surf = SURF.create();
         this.surf.setUpright(false);
+        this.surf.setExtended(true);
+
+        this.hog = new HOGDescriptor();
+        MatOfFloat daimlerPeopleDetector = HOGDescriptor.getDefaultPeopleDetector();
+        hog.setSVMDetector(daimlerPeopleDetector);
+
+        this.mog2 = Video.createBackgroundSubtractorMOG2();
+        mog2.setHistory(10);
+
     }
 
     /**
@@ -428,9 +443,9 @@ public class ImageProcess_ObjectTracking {
         //use key point detector to get background point
         log("Matching previous Frame to Current frame... ");
         Mat currentFrameDescriptors = new Mat();
-        surf.detectAndCompute(input, new Mat(), surfKeyPoints, currentFrameDescriptors);
+        surf.compute(input, surfKeyPoints, currentFrameDescriptors);
         KeyPointsAndFeaturesVector currentFrameDesScriptorsWithPosition = new KeyPointsAndFeaturesVector(surfKeyPoints, currentFrameDescriptors);
-        List<MatOfDMatch> allMatchesDescriptors = matchingFeatures(currentFrameDesScriptorsWithPosition.getDescriptorsWithPosition(), backgroundModelTobi.getDescriptorsWithPosition());
+        List<MatOfDMatch> allMatchesDescriptors = matchingFeatures(currentFrameDesScriptorsWithPosition.getDescriptors(), backgroundModelTobi.getDescriptors());
 
         //quick calculation of max and min distances between key points
         ArrayList<DMatch> bestMatches = findBestMatches(allMatchesDescriptors);
@@ -470,6 +485,77 @@ public class ImageProcess_ObjectTracking {
         log("Finished Tobi");
         log("Time: " + (System.currentTimeMillis() - start));
         return new Mat[]{drawMaskPointToImage(input, mask), img_matches, maskOnBackgroundModel};
+    }
+
+    public Mat[] personDetector(Mat input) {
+        Mat person = new Mat();
+        input.copyTo(person);
+        MatOfRect foundLocations = new MatOfRect();
+        MatOfDouble foundWeights = new MatOfDouble();
+        double hitThreshold = 0;
+        Size winStride = new Size(4, 4);
+        Size padding = new Size(8, 8);
+        double scale = 1.05;
+        boolean useMeanshiftGrouping = true;
+        double finalThreshold = 0;
+        hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
+                finalThreshold, useMeanshiftGrouping);
+        drawRect(person, foundLocations, new Scalar(0, 0, 255));
+
+        Mat connectedMat = getMostSalientForegroundObject(input);
+        Mat imageWithBestRect = new Mat();
+        input.copyTo(imageWithBestRect);
+        Rect r = new Rect(bestRect);
+        MatOfRect bestrects = new MatOfRect();
+        bestrects.fromArray(r);
+        drawRect(imageWithBestRect, bestrects, new Scalar(255, 0, 0));
+
+        return new Mat[]{person, imageWithBestRect, connectedMat};
+    }
+
+    double[] bestRect = new double[5];
+    double backgroundDensity = 0;
+
+    private Mat getMostSalientForegroundObject(Mat input) {
+        Mat mask = new Mat();
+        mog2.apply(input, mask);
+        Mat fgmaskClosed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
+        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
+        Mat labels = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+        int connectivity = 8;
+        Imgproc.connectedComponentsWithStats(fgmaskClosed, labels, stats, centroids,
+                connectivity, CvType.CV_32S);
+        double sum = 0;
+        for (int i = 0; i < stats.rows(); i++) {
+            sum += stats.get(i, 4)[0];
+        }
+        backgroundDensity = stats.get(0, 4)[0] / sum;
+        bestRect = new double[5];
+        if (stats.rows() < 2) {
+            bestRect = new double[]{-1, -1, -1, -1, -1};
+        } else {
+            int mostSalientIndex = 1;
+            double max = 0;
+            for (int i = 1; i < stats.rows(); i++) {
+                if (stats.get(i, 4)[0] > max) {
+                    max = stats.get(i, 4)[0];
+                    mostSalientIndex = i;
+                }
+            }
+            for (int i = 0; i < bestRect.length; i++)
+                bestRect[i] = stats.get(mostSalientIndex, i)[0];
+        }
+        return fgmaskClosed;
+    }
+
+    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
+        List<Rect> rects = matOfRect.toList();
+        for (Rect r : rects) {
+            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
+        }
     }
 
     private void buildMaskImageForTesting(Mat maskOnBackgroundModel, Mat mask) {
@@ -593,9 +679,8 @@ public class ImageProcess_ObjectTracking {
                 backgroundModelTobi.getDescriptors().put(dMatch.trainIdx, col, descriptors.get(dMatch.queryIdx, col));
                 backgroundModelTobi.getDescriptorsWithPosition().put(dMatch.trainIdx, col, descriptors.get(dMatch.queryIdx, col));
             }
-            backgroundModelTobi.getDescriptorsWithPosition().put(dMatch.trainIdx, 63, keyPointQuery.pt.x);
-            backgroundModelTobi.getDescriptorsWithPosition().put(dMatch.trainIdx, 64, keyPointQuery.pt.y);
-
+            backgroundModelTobi.getDescriptorsWithPosition().put(dMatch.trainIdx, descriptors.cols(), keyPointQuery.pt.x / KeyPointsAndFeaturesVector.quote);
+            backgroundModelTobi.getDescriptorsWithPosition().put(dMatch.trainIdx, descriptors.cols() + 1, keyPointQuery.pt.y / KeyPointsAndFeaturesVector.quote);
         }
 
         return good_indexes;
@@ -623,7 +708,7 @@ public class ImageProcess_ObjectTracking {
         ArrayList<DMatch> bestMatches = new ArrayList<>();
         for (int i = 0; i < allMatches.size(); i++) {
             List<DMatch> list = allMatches.get(i).toList();
-            if (list.get(0).distance < 0.75 * list.get(1).distance) {
+            if (list.get(0).distance < 0.8 * list.get(1).distance) {
                 bestMatches.add(list.get(0));
             }
         }
@@ -642,7 +727,7 @@ public class ImageProcess_ObjectTracking {
 
     private void initBackgroundModel(Mat input, MatOfKeyPoint surfKeyPoints) {
         input.copyTo(previousFrame);
-        surf.detectAndCompute(previousFrame, new Mat(), surfKeyPoints, previousFrameDescriptors);
+        surf.compute(previousFrame, surfKeyPoints, previousFrameDescriptors);
         surfKeyPoints.copyTo(previousKeyPoint);
         List<KeyPoint> keyPoints = previousKeyPoint.toList();
         for (int i = 0; i < keyPoints.size(); i++) {
@@ -711,7 +796,7 @@ public class ImageProcess_ObjectTracking {
 
         ArrayList<DMatch> goodMatches = new ArrayList<>();
         for (int i = 0; i < dMatches.size(); i++) {
-            if (dMatches.get(i).distance <= Math.max(3 * min_dist, 0.02)) {
+            if (dMatches.get(i).distance <= Math.max(2 * min_dist, 0.02)) {
                 goodMatches.add(dMatches.get(i));
             }
         }

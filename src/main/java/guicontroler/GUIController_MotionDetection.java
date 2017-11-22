@@ -71,7 +71,8 @@ public class GUIController_MotionDetection {
         ini();
         if (!this.cameraActive) {
             // start the video capture
-            this.capture.open(cameraId);
+            //this.capture.open(cameraId);
+            this.capture.open("testboy.mp4");
 
             // is the video stream available?
             if (this.capture.isOpened()) {

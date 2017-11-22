@@ -86,7 +86,7 @@ public class GUIController_ObjectTracking {
             // start the video capture
 
             //this.capture.open(cameraId);
-            this.capture.open("testtasse.mp4");
+            this.capture.open("testboy.mp4");
             //this.capture.open("testbox.flv");
             //Mat tictacImage = new Mat();
             //capture.read(tictacImage);
@@ -149,8 +149,10 @@ public class GUIController_ObjectTracking {
                         Image mmgImageToShow = Utils.mat2Image(classificationFrame);
                         updateImageView(gmmMeansView, mmgImageToShow);
                     }
-                    if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty() && !flow.empty()) {
-                        Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
+                    //if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty() && !flow.empty()) {
+                    if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
+                        //Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
+                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector(originalFrame);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
                         if (grabcutFrameAndMatches.length == 3) {
