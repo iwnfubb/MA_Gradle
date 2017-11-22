@@ -12,6 +12,7 @@ import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.objdetect.HOGDescriptor;
+import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
@@ -39,9 +40,8 @@ public class ImageProcess_ObjectTracking {
     boolean initBackgroundModel = false;
     HOGDescriptor hog;
     BackgroundSubtractorMOG2 mog2;
-    //public Mat tictacImage;
-    //MatOfKeyPoint tictacKeyPoint = new MatOfKeyPoint();
-    //Mat tictacDescriptors = new Mat();
+    BackgroundSubtractorKNN bgknn;
+
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
         this.capture = capture;
@@ -56,15 +56,10 @@ public class ImageProcess_ObjectTracking {
         this.mog2 = Video.createBackgroundSubtractorMOG2();
         mog2.setHistory(10);
 
+        this.bgknn = Video.createBackgroundSubtractorKNN();
+        bgknn.setHistory(10);
     }
 
-    /**
-     * public void initTicTacImage() {
-     * tictacKeyPoint = getSURFKeyPoint(tictacImage, new Mat());
-     * surf.detectAndCompute(tictacImage, new Mat(), tictacKeyPoint, tictacDescriptors);
-     * tictacKeyPoint.fromList(setClassToZero(tictacKeyPoint));
-     * }
-     */
 
     public Mat getOriginalFrame() {
         Mat currentFrame = new Mat();
@@ -78,11 +73,13 @@ public class ImageProcess_ObjectTracking {
         return currentFrame;
     }
 
+
     public MatOfKeyPoint getSURFKeyPoint(Mat input, Mat mask) {
         MatOfKeyPoint keyPointVector = new MatOfKeyPoint();
         surf.detect(input, keyPointVector, mask);
         return keyPointVector;
     }
+
 
     public Mat getGaussianBlur(Mat input) {
         Mat blurFrame = new Mat();
@@ -92,21 +89,25 @@ public class ImageProcess_ObjectTracking {
         return blurFrame;
     }
 
+
     public void setGaussianFilterSize(int size) {
         int validSize = (size % 2) != 0 ? size : size - 1;
         log("Change Gaussian filter size to:" + validSize);
         gaussianFilterSize = new Size(validSize, validSize);
     }
 
+
     public void setHessianThreshold(int value) {
         log("Change Hessian Threshold to:" + value);
         surf.setHessianThreshold(value);
     }
 
+
     public void setNOctaveLayer(int value) {
         log("Change Hessian Threshold to:" + value);
         surf.setNOctaveLayers(value);
     }
+
 
     public Mat opticalFLow(Mat input) {
         Mat img = new Mat(), copyOfOriginal = new Mat();
@@ -136,6 +137,7 @@ public class ImageProcess_ObjectTracking {
         }
         return flow;
     }
+
 
     public Mat drawOpticalFlowToImage(Mat input, Mat flow) {
         Mat copyOfOriginal = new Mat();
@@ -428,7 +430,6 @@ public class ImageProcess_ObjectTracking {
         return new Mat[]{mergeImageAndMask(copyOfOriginal, mask)};
     }
 
-
     public Mat[] tobiModel_Upgrade(Mat input, MatOfKeyPoint surfKeyPoints, Mat flow, double eps, int minP) {
         frameCounter++;
         //Imgproc.cvtColor(input, input, Imgproc.COLOR_BGR2GRAY);
@@ -508,6 +509,7 @@ public class ImageProcess_ObjectTracking {
         Rect r = new Rect(bestRect);
         MatOfRect bestrects = new MatOfRect();
         bestrects.fromArray(r);
+        drawRect(person, bestrects, new Scalar(255, 0, 0));
         drawRect(imageWithBestRect, bestrects, new Scalar(255, 0, 0));
 
         return new Mat[]{person, imageWithBestRect, connectedMat};
@@ -518,7 +520,7 @@ public class ImageProcess_ObjectTracking {
 
     private Mat getMostSalientForegroundObject(Mat input) {
         Mat mask = new Mat();
-        mog2.apply(input, mask);
+        bgknn.apply(input, mask, 0.1);
         Mat fgmaskClosed = new Mat();
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
         Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
