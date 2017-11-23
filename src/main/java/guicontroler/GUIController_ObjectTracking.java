@@ -139,7 +139,6 @@ public class GUIController_ObjectTracking {
                         eps = Double.parseDouble(epsilon.getText());
                         minP = Integer.parseInt(minPoints.getText());
                     } catch (NumberFormatException e) {
-                        System.out.println("Error by Parsing String");
                         eps = 0.05d;
                         minP = 10;
                     }
