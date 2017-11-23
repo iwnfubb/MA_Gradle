@@ -11,6 +11,7 @@ import org.opencv.features2d.Features2d;
 import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
+import org.opencv.ml.SVM;
 import org.opencv.objdetect.HOGDescriptor;
 import org.opencv.tracking.Tracker;
 import org.opencv.tracking.TrackerKCF;
@@ -50,6 +51,9 @@ public class ImageProcess_ObjectTracking {
         this.surf = SURF.create();
         this.surf.setUpright(false);
         this.surf.setExtended(true);
+
+        //SVM mySVM  = SVM.create();
+        //mySVM.set
 
         this.hog = new HOGDescriptor();
         MatOfFloat peopleDetector = HOGDescriptor.getDefaultPeopleDetector();
@@ -524,6 +528,12 @@ public class ImageProcess_ObjectTracking {
             if ((index = isBestRectDetected(r, foundLocations)) != -1 && backgroundDensity > 0.8) {
                 //Rect trackRect = foundLocations.toList().get(index);
                 trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
+                tracker = TrackerKCF.create();
+                tracker.init(input, trackingArea);
+                startTracking = true;
+            } else if (foundLocations.rows() != 0) {
+                Rect rect = foundLocations.toList().get(0);
+                trackingArea = new Rect2d(rect.x, rect.y, rect.width, rect.height);
                 tracker = TrackerKCF.create();
                 tracker.init(input, trackingArea);
                 startTracking = true;
