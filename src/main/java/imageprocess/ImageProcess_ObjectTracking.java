@@ -12,6 +12,8 @@ import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.objdetect.HOGDescriptor;
+import org.opencv.tracking.Tracker;
+import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
@@ -21,8 +23,6 @@ import utils.KeyPointsAndFeaturesVector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-import java.util.stream.DoubleStream;
 
 import static org.opencv.video.Video.calcOpticalFlowFarneback;
 
@@ -41,6 +41,8 @@ public class ImageProcess_ObjectTracking {
     HOGDescriptor hog;
     BackgroundSubtractorMOG2 mog2;
     BackgroundSubtractorKNN bgknn;
+    Tracker tracker;
+    boolean startTracking = false;
 
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
@@ -50,14 +52,16 @@ public class ImageProcess_ObjectTracking {
         this.surf.setExtended(true);
 
         this.hog = new HOGDescriptor();
-        MatOfFloat daimlerPeopleDetector = HOGDescriptor.getDefaultPeopleDetector();
-        hog.setSVMDetector(daimlerPeopleDetector);
+        MatOfFloat peopleDetector = HOGDescriptor.getDefaultPeopleDetector();
+        hog.setSVMDetector(peopleDetector);
 
         this.mog2 = Video.createBackgroundSubtractorMOG2();
         mog2.setHistory(10);
 
         this.bgknn = Video.createBackgroundSubtractorKNN();
         bgknn.setHistory(10);
+
+        this.tracker = TrackerKCF.create();
     }
 
 
@@ -489,6 +493,8 @@ public class ImageProcess_ObjectTracking {
     }
 
     public Mat[] personDetector(Mat input) {
+        frameCounter++;
+        backgroundDensity = 0;
         Mat person = new Mat();
         input.copyTo(person);
         MatOfRect foundLocations = new MatOfRect();
@@ -496,27 +502,93 @@ public class ImageProcess_ObjectTracking {
         double hitThreshold = 0;
         Size winStride = new Size(4, 4);
         Size padding = new Size(8, 8);
-        double scale = 1.05;
+        double scale = 1.5;
         boolean useMeanshiftGrouping = true;
         double finalThreshold = 0;
-        hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
-                finalThreshold, useMeanshiftGrouping);
-        drawRect(person, foundLocations, new Scalar(0, 0, 255));
+        if (!startTracking) {
+            hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
+                    finalThreshold, useMeanshiftGrouping);
+            foundLocations = filterPersonArea(foundLocations, foundWeights);
+            drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
-        Mat connectedMat = getMostSalientForegroundObject(input);
-        Mat imageWithBestRect = new Mat();
-        input.copyTo(imageWithBestRect);
-        Rect r = new Rect(bestRect);
-        MatOfRect bestrects = new MatOfRect();
-        bestrects.fromArray(r);
-        drawRect(person, bestrects, new Scalar(255, 0, 0));
-        drawRect(imageWithBestRect, bestrects, new Scalar(255, 0, 0));
+            Mat connectedMat = getMostSalientForegroundObject(input);
+            Mat imageWithBestRect = new Mat();
+            input.copyTo(imageWithBestRect);
+            Rect r = new Rect(bestRect);
+            MatOfRect bestRect = new MatOfRect();
+            bestRect.fromArray(r);
+            drawRect(person, bestRect, new Scalar(255, 0, 0));
+            drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
+            log("Background backgroundDensity: " + backgroundDensity);
+            int index;
+            if ((index = isBestRectDetected(r, foundLocations)) != -1 && backgroundDensity > 0.8) {
+                //Rect trackRect = foundLocations.toList().get(index);
+                trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
+                tracker = TrackerKCF.create();
+                tracker.init(input, trackingArea);
+                startTracking = true;
+            }
+            return new Mat[]{person, imageWithBestRect, connectedMat};
+        } else {
+            startTracking = tracker.update(person, trackingArea);
+            MatOfRect trackingBoxes = new MatOfRect();
+            Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
+            trackingBoxes.fromArray(newRect);
+            if (startTracking) {
+                Mat imageROI = new Mat(person, newRect);
+                hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
+                        finalThreshold, useMeanshiftGrouping);
+                if (foundWeights.rows() != 0) {
+                    List<Double> doubles = foundWeights.toList();
+                    boolean isPersonThere = false;
+                    log("#Recheck ");
+                    for (Double d : doubles) {
+                        log("#Frame:" + frameCounter + " Person Prob: " + d);
+                        if (d > 0.5) {
+                            isPersonThere = true;
+                        }
+                    }
+                    startTracking = startTracking && isPersonThere;
+                }
+            }
+            drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
+            return new Mat[]{person, person, person};
+        }
 
-        return new Mat[]{person, imageWithBestRect, connectedMat};
     }
 
+    Rect2d trackingArea;
     double[] bestRect = new double[5];
     double backgroundDensity = 0;
+
+    private MatOfRect filterPersonArea(MatOfRect foundLocations, MatOfDouble foundWeights) {
+        if (foundWeights.rows() != 0) {
+            List<Rect> rects = foundLocations.toList();
+            List<Double> ws = foundWeights.toList();
+            List<Rect> newList = new ArrayList<>();
+            log("#Filter");
+            for (Double d : ws) {
+                log("#Frame:" + frameCounter + " Person Prob: " + d);
+                if (d > 0.5) {
+                    newList.add(rects.get(ws.indexOf(d)));
+                }
+            }
+            if (newList.size() != 0)
+                foundLocations.fromList(newList);
+            else
+                foundLocations = new MatOfRect();
+        }
+        return foundLocations;
+    }
+
+    private int isBestRectDetected(Rect bestrect, MatOfRect rects) {
+        List<Rect> rectslist = rects.toList();
+        for (int i = 0; i < rectslist.size(); i++) {
+            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area())
+                return i;
+        }
+        return -1;
+    }
 
     private Mat getMostSalientForegroundObject(Mat input) {
         Mat mask = new Mat();
@@ -551,6 +623,13 @@ public class ImageProcess_ObjectTracking {
                 bestRect[i] = stats.get(mostSalientIndex, i)[0];
         }
         return fgmaskClosed;
+    }
+
+    private boolean isRect1InsideRect2(Rect rect1, Rect rect2) {
+        if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height)
+            return true;
+        else
+            return false;
     }
 
     private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
