@@ -7,18 +7,21 @@ import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.Instance;
 import net.sf.javaml.core.SparseInstance;
 import org.opencv.core.*;
+import org.opencv.features2d.Feature2D;
 import org.opencv.features2d.Features2d;
 import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
-import org.opencv.ml.SVM;
 import org.opencv.objdetect.HOGDescriptor;
 import org.opencv.tracking.Tracker;
+import org.opencv.tracking.TrackerGOTURN;
 import org.opencv.tracking.TrackerKCF;
+import org.opencv.tracking.TrackerTLD;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 import org.opencv.xfeatures2d.SURF;
 import utils.KeyPointsAndFeaturesVector;
 
@@ -55,6 +58,12 @@ public class ImageProcess_ObjectTracking {
         //SVM mySVM  = SVM.create();
         //mySVM.set
 
+        /*this.hog = new HOGDescriptor(new Size(48, 96),
+                new Size(16, 16),
+                new Size(8, 8),
+                new Size(8, 8),
+                9, 1,-1, HOGDescriptor.L2Hys, 1.0, true, HOGDescriptor.DEFAULT_NLEVELS, false);
+        */
         this.hog = new HOGDescriptor();
         MatOfFloat peopleDetector = HOGDescriptor.getDefaultPeopleDetector();
         hog.setSVMDetector(peopleDetector);
@@ -65,6 +74,10 @@ public class ImageProcess_ObjectTracking {
         this.bgknn = Video.createBackgroundSubtractorKNN();
         bgknn.setHistory(10);
 
+        createMyTracker();
+    }
+
+    private void createMyTracker() {
         this.tracker = TrackerKCF.create();
     }
 
@@ -112,7 +125,7 @@ public class ImageProcess_ObjectTracking {
 
 
     public void setNOctaveLayer(int value) {
-        log("Change Hessian Threshold to:" + value);
+        log("Change NOctave Layer to:" + value);
         surf.setNOctaveLayers(value);
     }
 
@@ -506,7 +519,7 @@ public class ImageProcess_ObjectTracking {
         double hitThreshold = 0;
         Size winStride = new Size(4, 4);
         Size padding = new Size(8, 8);
-        double scale = 1.5;
+        double scale = 1.05;
         boolean useMeanshiftGrouping = true;
         double finalThreshold = 0;
         if (!startTracking) {
@@ -528,18 +541,19 @@ public class ImageProcess_ObjectTracking {
             if ((index = isBestRectDetected(r, foundLocations)) != -1 && backgroundDensity > 0.8) {
                 //Rect trackRect = foundLocations.toList().get(index);
                 trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
-                tracker = TrackerKCF.create();
+                createMyTracker();
                 tracker.init(input, trackingArea);
                 startTracking = true;
             } else if (foundLocations.rows() != 0) {
                 Rect rect = foundLocations.toList().get(0);
                 trackingArea = new Rect2d(rect.x, rect.y, rect.width, rect.height);
-                tracker = TrackerKCF.create();
+                createMyTracker();
                 tracker.init(input, trackingArea);
                 startTracking = true;
             }
             return new Mat[]{person, imageWithBestRect, connectedMat};
         } else {
+            Mat connectedMat = getMostSalientForegroundObject(input);
             startTracking = tracker.update(person, trackingArea);
             MatOfRect trackingBoxes = new MatOfRect();
             Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
@@ -556,13 +570,14 @@ public class ImageProcess_ObjectTracking {
                         log("#Frame:" + frameCounter + " Person Prob: " + d);
                         if (d > 0.5) {
                             isPersonThere = true;
+                            log("!!! Person detected !!!");
                         }
                     }
                     startTracking = startTracking && isPersonThere;
                 }
             }
             drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
-            return new Mat[]{person, person, person};
+            return new Mat[]{person, person, connectedMat};
         }
 
     }
@@ -570,6 +585,20 @@ public class ImageProcess_ObjectTracking {
     Rect2d trackingArea;
     double[] bestRect = new double[5];
     double backgroundDensity = 0;
+
+    private Mat convertOFMat2BinaryMat(Mat flow) {
+        Mat result = new Mat(flow.size(), CvType.CV_8UC1);
+        for (int y = 0; y < flow.rows(); y++)
+            for (int x = 0; x < flow.cols(); x++) {
+                double[] flowAt = flow.get(y, x);
+                if (Math.abs(flowAt[0]) > 0.5 || Math.abs(flowAt[1]) > 0.5) {
+                    result.put(y, x, 255);
+                } else {
+                    result.put(y, x, 0);
+                }
+            }
+        return result;
+    }
 
     private MatOfRect filterPersonArea(MatOfRect foundLocations, MatOfDouble foundWeights) {
         if (foundWeights.rows() != 0) {
@@ -581,12 +610,14 @@ public class ImageProcess_ObjectTracking {
                 log("#Frame:" + frameCounter + " Person Prob: " + d);
                 if (d > 0.5) {
                     newList.add(rects.get(ws.indexOf(d)));
+                    log("!!! Person detected !!!");
                 }
             }
-            if (newList.size() != 0)
+            if (newList.size() != 0) {
                 foundLocations.fromList(newList);
-            else
+            } else {
                 foundLocations = new MatOfRect();
+            }
         }
         return foundLocations;
     }
@@ -594,18 +625,28 @@ public class ImageProcess_ObjectTracking {
     private int isBestRectDetected(Rect bestrect, MatOfRect rects) {
         List<Rect> rectslist = rects.toList();
         for (int i = 0; i < rectslist.size(); i++) {
-            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area())
+            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area()) {
                 return i;
+            }
         }
         return -1;
     }
 
     private Mat getMostSalientForegroundObject(Mat input) {
+        double thresh = 70;
         Mat mask = new Mat();
+        Mat edges = new Mat();
         bgknn.apply(input, mask, 0.1);
+        Imgproc.cvtColor(input, edges, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(edges, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat contoursMat = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
+        for (int i = 0; i < contours.size(); i++)
+            Imgproc.drawContours(contoursMat, contours, i, new Scalar(255), -1);
         Mat fgmaskClosed = new Mat();
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
-        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(contoursMat, fgmaskClosed, Imgproc.MORPH_GRADIENT, kernel);
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
@@ -636,10 +677,11 @@ public class ImageProcess_ObjectTracking {
     }
 
     private boolean isRect1InsideRect2(Rect rect1, Rect rect2) {
-        if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height)
+        if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
     private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
@@ -873,6 +915,7 @@ public class ImageProcess_ObjectTracking {
                 Imgproc.GC_INIT_WITH_MASK);
         return mask;
     }
+
 
     private ArrayList<DMatch> calculateGoodMatches(MatOfDMatch matches) {
         double max_dist = 0;

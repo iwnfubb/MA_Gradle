@@ -79,7 +79,7 @@ public class GUIController_ObjectTracking {
 
     private boolean trigger = false;
     private boolean liveVideo = false;
-    private int frameCounter = 0;
+    public static int frameCounter = 0;
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -88,17 +88,18 @@ public class GUIController_ObjectTracking {
      */
     @FXML
     protected void startCamera(ActionEvent event) {
+        frameCounter = 0;
         if (!this.cameraActive) {
 
             // start the video capture
             if (liveVideo) {
                 this.capture.open(cameraId);
             } else {
-                this.capture.open("v_run.mp4");
+                this.capture.open("v_slowwalk.mp4");
             }
+            ini();
             // is the video stream available?
             if (this.capture.isOpened()) {
-                ini();
                 this.cameraActive = true;
 
                 // grab a frame every 33 ms (30 frames/sec)
@@ -108,9 +109,11 @@ public class GUIController_ObjectTracking {
                             capture.set(Videoio.CAP_PROP_POS_FRAMES, frameCounter);
                             trigger = false;
                         } else {
-                            timerbar.setValue(capture.get(Videoio.CAP_PROP_POS_FRAMES));
+                            timerbar.setValue(frameCounter);
                         }
                     }
+
+                    frameCounter = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
                     Mat gaussianBlurFrame = imgProcess.getGaussianBlur(originalFrame);
