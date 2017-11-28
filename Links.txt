@@ -1,0 +1,2 @@
+Video stabilization for moving camera
+https://stackoverflow.com/questions/3431434/video-stabilization-with-opencv
