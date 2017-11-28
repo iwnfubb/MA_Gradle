@@ -96,14 +96,6 @@ public class GUIController_ObjectTracking {
             } else {
                 this.capture.open("v_run.mp4");
             }
-            //this.capture.open("testbox.flv");
-            //Mat tictacImage = new Mat();
-            //capture.read(tictacImage);
-            //Imgproc.cvtColor(tictacImage, tictacImage, Imgproc.COLOR_BGR2GRAY);
-            //imgProcess.tictacImage = tictacImage;
-            //imgProcess.initTicTacImage();
-
-            //this.capture.open(cameraId);
             // is the video stream available?
             if (this.capture.isOpened()) {
                 ini();
