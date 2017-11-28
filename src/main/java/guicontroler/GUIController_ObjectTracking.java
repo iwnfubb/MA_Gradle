@@ -6,6 +6,7 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
 import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.videoio.Videoio;
 import utils.Utils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -56,6 +57,8 @@ public class GUIController_ObjectTracking {
     @FXML
     private Slider nOctaveLayer;
     @FXML
+    private Slider timerbar;
+    @FXML
     private Button button;
     @FXML
     private TextField epsilon;
@@ -74,6 +77,10 @@ public class GUIController_ObjectTracking {
 
     private Mat previousFrameFlow = new Mat();
 
+    private boolean trigger = false;
+    private boolean liveVideo = false;
+    private int frameCounter = 0;
+
     /**
      * The action triggered by pushing the button on the GUI
      *
@@ -81,12 +88,14 @@ public class GUIController_ObjectTracking {
      */
     @FXML
     protected void startCamera(ActionEvent event) {
-        ini();
         if (!this.cameraActive) {
-            // start the video capture
 
-            //this.capture.open(cameraId);
-            this.capture.open("testboy.mp4");
+            // start the video capture
+            if (liveVideo) {
+                this.capture.open(cameraId);
+            } else {
+                this.capture.open("v_run.mp4");
+            }
             //this.capture.open("testbox.flv");
             //Mat tictacImage = new Mat();
             //capture.read(tictacImage);
@@ -95,13 +104,21 @@ public class GUIController_ObjectTracking {
             //imgProcess.initTicTacImage();
 
             //this.capture.open(cameraId);
-
             // is the video stream available?
             if (this.capture.isOpened()) {
+                ini();
                 this.cameraActive = true;
 
                 // grab a frame every 33 ms (30 frames/sec)
                 Runnable frameGrabber = () -> {
+                    if (!liveVideo) {
+                        if (trigger) {
+                            capture.set(Videoio.CAP_PROP_POS_FRAMES, frameCounter);
+                            trigger = false;
+                        } else {
+                            timerbar.setValue(capture.get(Videoio.CAP_PROP_POS_FRAMES));
+                        }
+                    }
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
                     Mat gaussianBlurFrame = imgProcess.getGaussianBlur(originalFrame);
@@ -162,8 +179,9 @@ public class GUIController_ObjectTracking {
                         }
 
                     }
-                    if (!flow.empty())
+                    if (!flow.empty()) {
                         flow.copyTo(previousFrameFlow);
+                    }
                 };
 
                 this.timer = Executors.newSingleThreadScheduledExecutor();
@@ -236,6 +254,17 @@ public class GUIController_ObjectTracking {
         nOctaveLayer.valueProperty().addListener((observable, oldValue, newValue) -> {
             imgProcess.setNOctaveLayer(newValue.intValue());
         });
+
+        if (!liveVideo) {
+            timerbar.setMin(0);
+            timerbar.setMax(this.capture.get(Videoio.CAP_PROP_FRAME_COUNT));
+            timerbar.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue.intValue() < this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)) {
+                    this.frameCounter = newValue.intValue();
+                    this.trigger = true;
+                }
+            });
+        }
     }
 
 }
