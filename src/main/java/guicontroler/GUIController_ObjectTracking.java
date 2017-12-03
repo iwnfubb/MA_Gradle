@@ -43,6 +43,8 @@ public class GUIController_ObjectTracking {
     @FXML
     private ImageView maskView;
     @FXML
+    private ImageView backgroundModel;
+    @FXML
     private CheckBox opticalFlowActive;
     @FXML
     private CheckBox surfImgActive;
@@ -164,6 +166,7 @@ public class GUIController_ObjectTracking {
                     if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
                         //Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
                         Mat[] grabcutFrameAndMatches = imgProcess.personDetector(originalFrame);
+                        //Mat[] grabcutFrameAndMatches = imgProcess.imageSegmentaion(originalFrame);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
                         if (grabcutFrameAndMatches.length == 3) {
@@ -171,6 +174,14 @@ public class GUIController_ObjectTracking {
                             updateImageView(matchesView, mmgImageToShow);
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[2]);
                             updateImageView(maskView, mmgImageToShow);
+                        }
+                        if (grabcutFrameAndMatches.length == 6){
+                            mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[3]);
+                            updateImageView(surfImgView, mmgImageToShow);
+                            mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[4]);
+                            updateImageView(opticalFlowView, mmgImageToShow);
+                            mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[5]);
+                            updateImageView(backgroundModel, mmgImageToShow);
                         }
 
                     }

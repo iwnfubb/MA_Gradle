@@ -27,6 +27,7 @@ import utils.KeyPointsAndFeaturesVector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.opencv.video.Video.calcOpticalFlowFarneback;
 
@@ -544,13 +545,13 @@ public class ImageProcess_ObjectTracking {
                 createMyTracker();
                 tracker.init(input, trackingArea);
                 startTracking = true;
-            } else if (foundLocations.rows() != 0) {
+            } /*else if (foundLocations.rows() != 0) {
                 Rect rect = foundLocations.toList().get(0);
                 trackingArea = new Rect2d(rect.x, rect.y, rect.width, rect.height);
                 createMyTracker();
                 tracker.init(input, trackingArea);
                 startTracking = true;
-            }
+            }*/
             return new Mat[]{person, imageWithBestRect, connectedMat};
         } else {
             Mat connectedMat = getMostSalientForegroundObject(input);
@@ -558,8 +559,10 @@ public class ImageProcess_ObjectTracking {
             MatOfRect trackingBoxes = new MatOfRect();
             Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
             trackingBoxes.fromArray(newRect);
+            Mat[] segmentations = new Mat[3];
             if (startTracking) {
                 Mat imageROI = new Mat(person, newRect);
+                segmentations = imageSegmentaion(imageROI);
                 hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                         finalThreshold, useMeanshiftGrouping);
                 if (foundWeights.rows() != 0) {
@@ -577,7 +580,7 @@ public class ImageProcess_ObjectTracking {
                 }
             }
             drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
-            return new Mat[]{person, person, connectedMat};
+            return new Mat[]{person, person, connectedMat, segmentations[2], segmentations[0], segmentations[1]};
         }
 
     }
@@ -633,20 +636,11 @@ public class ImageProcess_ObjectTracking {
     }
 
     private Mat getMostSalientForegroundObject(Mat input) {
-        double thresh = 70;
         Mat mask = new Mat();
-        Mat edges = new Mat();
         bgknn.apply(input, mask, 0.1);
-        Imgproc.cvtColor(input, edges, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
-        List<MatOfPoint> contours = new ArrayList<>();
-        Imgproc.findContours(edges, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
-        Mat contoursMat = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
-        for (int i = 0; i < contours.size(); i++)
-            Imgproc.drawContours(contoursMat, contours, i, new Scalar(255), -1);
         Mat fgmaskClosed = new Mat();
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        Imgproc.morphologyEx(contoursMat, fgmaskClosed, Imgproc.MORPH_GRADIENT, kernel);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
+        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
@@ -675,6 +669,117 @@ public class ImageProcess_ObjectTracking {
         }
         return fgmaskClosed;
     }
+
+    public Mat[] imageSegmentaion(Mat input) {
+        double thresh = 70;
+        Mat edges = new Mat();
+        //Canny
+        log("Canny");
+        Imgproc.cvtColor(input, edges, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
+
+        //Mor
+        log("morphologyEx");
+        Mat fgmaskClosed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(edges, fgmaskClosed, Imgproc.MORPH_GRADIENT, kernel);
+
+        //Contours -> Foreground mask
+        log("findContours");
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(fgmaskClosed, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat foregroundMask = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
+        for (int i = 0; i < contours.size(); i++)
+            Imgproc.drawContours(foregroundMask, contours, i, new Scalar(255), -1);
+
+        log("laplacian");
+        //Input with foreground mask
+        Mat inputWithForeGroundMask = new Mat();
+        input.copyTo(inputWithForeGroundMask, foregroundMask);
+
+        //Laplacian filter
+        Mat laplacianKernel = new Mat(new Size(3, 3), CvType.CV_32FC1);
+        laplacianKernel.put(0, 0,
+                new double[]{1, 1, 1,
+                        1, -8, 1,
+                        1, 1, 1});
+        Mat imgLaplacian = new Mat();
+        Imgproc.filter2D(inputWithForeGroundMask, imgLaplacian, CvType.CV_32F, kernel);
+        Mat sharp = new Mat();
+        input.copyTo(sharp);
+
+        input.convertTo(sharp, CvType.CV_32FC1);
+        Mat imgResult = new Mat();
+        Core.subtract(sharp, imgLaplacian, imgResult);
+
+        imgResult.convertTo(imgResult, CvType.CV_8UC3);
+        imgLaplacian.convertTo(imgLaplacian, CvType.CV_8UC3);
+
+        //convert input image to back white
+        Mat bw = new Mat();
+        Imgproc.cvtColor(input, bw, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.threshold(bw, bw, 40, 255, Imgproc.THRESH_BINARY | Imgproc.THRESH_OTSU);
+
+        //Distance transform
+        log("distanceTransform");
+        Mat dist = new Mat();
+        Imgproc.distanceTransform(bw, dist, Imgproc.CV_DIST_L2, 3);
+        Core.normalize(dist, dist, 0, 255.0, Core.NORM_MINMAX);
+
+        //morphology operation
+        log("dilate");
+        Mat dist1 = new Mat();
+        dist.copyTo(dist1);
+        Imgproc.threshold(dist1, dist1, 0.4 * 255, 1.0 * 255, Imgproc.THRESH_BINARY);
+        Mat kernel1 = new Mat(3, 3, CvType.CV_8UC1, Scalar.all(1));
+        Imgproc.dilate(dist1, dist1, kernel1);
+        //dist1.convertTo(dist1, CvType.CV_8UC1);
+
+        //create seed
+        log("findContours");
+        Mat dist_8u = new Mat();
+        dist1.convertTo(dist_8u, CvType.CV_8U);
+        List<MatOfPoint> contours1 = new ArrayList<>();
+        Imgproc.findContours(dist_8u, contours1, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat markers = new Mat(dist.size(), CvType.CV_32SC1, Scalar.all(0));
+
+        for (int i = 0; i < contours1.size(); i++) {
+            Imgproc.drawContours(markers, contours1, i, Scalar.all(i + 1), -1);
+        }
+
+        Imgproc.circle(markers, new Point(5, 5), 3, new Scalar(255, 255, 255), -1);
+        //markers*1000
+
+
+        //Watershed
+        log("watershed");
+        Imgproc.watershed(input, markers);
+        Mat mark = new Mat(markers.size(), CvType.CV_32SC1, Scalar.all(0)); //mark just for test
+        Core.bitwise_not(mark, mark);
+
+        List<Scalar> randomColors = new ArrayList<>();
+        Random rand = new Random();
+        for (int i = 0; i < contours1.size(); i++) {
+            randomColors.add(new Scalar(rand.nextInt(255), rand.nextInt(255), rand.nextInt(255)));
+        }
+
+        Mat dst = new Mat(markers.size(), CvType.CV_8UC3, Scalar.all(0));
+
+        for (int i = 0; i < markers.rows(); i++)
+            for (int j = 0; j < markers.cols(); j++) {
+                int index = new Double(markers.get(i, j)[0]).intValue();
+                if (index > 0 && index < contours1.size()) {
+                    dst.put(i, j, randomColors.get(index).val[0], randomColors.get(index).val[1], randomColors.get(index).val[2]);
+                } else {
+                    dst.put(i, j, 0, 0, 0);
+                }
+            }
+
+        //return new Mat[]{foregroundMask, imgLaplacian, imgResult, bw, dist, dist1, dst};
+        //return new Mat[]{foregroundMask, imgLaplacian, imgResult, bw, dist, dist1, dst};
+        return new Mat[]{inputWithForeGroundMask, fgmaskClosed, imgLaplacian, dst};
+    }
+
 
     private boolean isRect1InsideRect2(Rect rect1, Rect rect2) {
         if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height) {
