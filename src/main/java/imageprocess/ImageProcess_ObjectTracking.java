@@ -1,6 +1,7 @@
 package imageprocess;
 
 import algorithms.Clustering;
+import algorithms.ColorBlobDetector;
 import net.sf.javaml.clustering.OPTICS;
 import net.sf.javaml.core.Dataset;
 import net.sf.javaml.core.DefaultDataset;
@@ -8,20 +9,18 @@ import net.sf.javaml.core.Instance;
 import net.sf.javaml.core.SparseInstance;
 import org.opencv.core.*;
 import org.opencv.features2d.Feature2D;
+import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.features2d.FlannBasedMatcher;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.ml.EM;
 import org.opencv.objdetect.HOGDescriptor;
 import org.opencv.tracking.Tracker;
-import org.opencv.tracking.TrackerGOTURN;
 import org.opencv.tracking.TrackerKCF;
-import org.opencv.tracking.TrackerTLD;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.Videoio;
 import org.opencv.xfeatures2d.SURF;
 import utils.KeyPointsAndFeaturesVector;
 
@@ -48,16 +47,13 @@ public class ImageProcess_ObjectTracking {
     BackgroundSubtractorKNN bgknn;
     Tracker tracker;
     boolean startTracking = false;
-
+    FeatureDetector blob;
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
         this.capture = capture;
         this.surf = SURF.create();
         this.surf.setUpright(false);
         this.surf.setExtended(true);
-
-        //SVM mySVM  = SVM.create();
-        //mySVM.set
 
         /*this.hog = new HOGDescriptor(new Size(48, 96),
                 new Size(16, 16),
@@ -74,6 +70,9 @@ public class ImageProcess_ObjectTracking {
 
         this.bgknn = Video.createBackgroundSubtractorKNN();
         bgknn.setHistory(10);
+
+        blob = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
+        blob.read("blob.xml");
 
         createMyTracker();
     }
@@ -562,7 +561,7 @@ public class ImageProcess_ObjectTracking {
             Mat[] segmentations = new Mat[3];
             if (startTracking) {
                 Mat imageROI = new Mat(person, newRect);
-                segmentations = imageSegmentaion(imageROI);
+                segmentations = imageSegmentaion2(imageROI);
                 hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                         finalThreshold, useMeanshiftGrouping);
                 if (foundWeights.rows() != 0) {
@@ -580,94 +579,9 @@ public class ImageProcess_ObjectTracking {
                 }
             }
             drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
-            return new Mat[]{person, person, connectedMat, segmentations[2], segmentations[0], segmentations[1]};
+            return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
         }
 
-    }
-
-    Rect2d trackingArea;
-    double[] bestRect = new double[5];
-    double backgroundDensity = 0;
-
-    private Mat convertOFMat2BinaryMat(Mat flow) {
-        Mat result = new Mat(flow.size(), CvType.CV_8UC1);
-        for (int y = 0; y < flow.rows(); y++)
-            for (int x = 0; x < flow.cols(); x++) {
-                double[] flowAt = flow.get(y, x);
-                if (Math.abs(flowAt[0]) > 0.5 || Math.abs(flowAt[1]) > 0.5) {
-                    result.put(y, x, 255);
-                } else {
-                    result.put(y, x, 0);
-                }
-            }
-        return result;
-    }
-
-    private MatOfRect filterPersonArea(MatOfRect foundLocations, MatOfDouble foundWeights) {
-        if (foundWeights.rows() != 0) {
-            List<Rect> rects = foundLocations.toList();
-            List<Double> ws = foundWeights.toList();
-            List<Rect> newList = new ArrayList<>();
-            log("#Filter");
-            for (Double d : ws) {
-                log("#Frame:" + frameCounter + " Person Prob: " + d);
-                if (d > 0.5) {
-                    newList.add(rects.get(ws.indexOf(d)));
-                    log("!!! Person detected !!!");
-                }
-            }
-            if (newList.size() != 0) {
-                foundLocations.fromList(newList);
-            } else {
-                foundLocations = new MatOfRect();
-            }
-        }
-        return foundLocations;
-    }
-
-    private int isBestRectDetected(Rect bestrect, MatOfRect rects) {
-        List<Rect> rectslist = rects.toList();
-        for (int i = 0; i < rectslist.size(); i++) {
-            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area()) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private Mat getMostSalientForegroundObject(Mat input) {
-        Mat mask = new Mat();
-        bgknn.apply(input, mask, 0.1);
-        Mat fgmaskClosed = new Mat();
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
-        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
-        Mat labels = new Mat();
-        Mat stats = new Mat();
-        Mat centroids = new Mat();
-        int connectivity = 8;
-        Imgproc.connectedComponentsWithStats(fgmaskClosed, labels, stats, centroids,
-                connectivity, CvType.CV_32S);
-        double sum = 0;
-        for (int i = 0; i < stats.rows(); i++) {
-            sum += stats.get(i, 4)[0];
-        }
-        backgroundDensity = stats.get(0, 4)[0] / sum;
-        bestRect = new double[5];
-        if (stats.rows() < 2) {
-            bestRect = new double[]{-1, -1, -1, -1, -1};
-        } else {
-            int mostSalientIndex = 1;
-            double max = 0;
-            for (int i = 1; i < stats.rows(); i++) {
-                if (stats.get(i, 4)[0] > max) {
-                    max = stats.get(i, 4)[0];
-                    mostSalientIndex = i;
-                }
-            }
-            for (int i = 0; i < bestRect.length; i++)
-                bestRect[i] = stats.get(mostSalientIndex, i)[0];
-        }
-        return fgmaskClosed;
     }
 
     public Mat[] imageSegmentaion(Mat input) {
@@ -675,6 +589,7 @@ public class ImageProcess_ObjectTracking {
         Mat edges = new Mat();
         //Canny
         log("Canny");
+        convertImageByInvariantFeatures(input).copyTo(input);
         Imgproc.cvtColor(input, edges, Imgproc.COLOR_BGR2GRAY);
         Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
 
@@ -775,9 +690,191 @@ public class ImageProcess_ObjectTracking {
                 }
             }
 
+
+        log("blob");
+        MatOfKeyPoint blobKeyPoint = new MatOfKeyPoint();
+        Mat blobImage = new Mat();
+        inputWithForeGroundMask.copyTo(blobImage);
+        Imgproc.cvtColor(blobImage, blobImage, Imgproc.COLOR_RGB2GRAY);
+        blob.detect(blobImage, blobKeyPoint);
+
+        Features2d.drawKeypoints(blobImage, blobKeyPoint, blobImage, new Scalar(0, 0, 255, 0), 4);
+
         //return new Mat[]{foregroundMask, imgLaplacian, imgResult, bw, dist, dist1, dst};
         //return new Mat[]{foregroundMask, imgLaplacian, imgResult, bw, dist, dist1, dst};
-        return new Mat[]{inputWithForeGroundMask, fgmaskClosed, imgLaplacian, dst};
+        return new Mat[]{inputWithForeGroundMask, fgmaskClosed, imgLaplacian, dst, blobImage};
+    }
+
+    public Mat[] imageSegmentaion2(Mat input) {
+        double thresh = 70;
+        Mat edges = new Mat();
+        //Canny
+        log("Canny");
+        Mat inputWithinvariantFeatures = new Mat();
+        convertImageByInvariantFeatures(input).copyTo(inputWithinvariantFeatures);
+        Imgproc.cvtColor(inputWithinvariantFeatures, edges, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
+
+        //Mor
+        log("morphologyEx");
+        Mat fgmaskClosed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(edges, fgmaskClosed, Imgproc.MORPH_GRADIENT, kernel);
+
+        //Contours -> Foreground mask
+        log("findContours");
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(fgmaskClosed, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat foregroundMask = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
+        for (int i = 0; i < contours.size(); i++)
+            Imgproc.drawContours(foregroundMask, contours, i, new Scalar(255), -1);
+
+        //Input with foreground mask
+        Mat inputWithForeGroundMask = new Mat();
+        input.copyTo(inputWithForeGroundMask, foregroundMask);
+
+
+        log("blob");
+        MatOfKeyPoint blobKeyPoint = new MatOfKeyPoint();
+        Mat blobImage = new Mat();
+        inputWithForeGroundMask.copyTo(blobImage);
+        Imgproc.cvtColor(inputWithForeGroundMask, blobImage, Imgproc.COLOR_RGB2GRAY);
+        blob.detect(blobImage, blobKeyPoint);
+
+        Features2d.drawKeypoints(blobImage, blobKeyPoint, blobImage, new Scalar(0, 0, 255, 0), 4);
+        return new Mat[]{inputWithForeGroundMask, fgmaskClosed, blobImage};
+    }
+
+    private Mat convertImageByInvariantFeatures(Mat input) {
+        Mat result = new Mat();
+        input.copyTo(result);
+        for (int y = 0; y < result.rows(); y++)
+            for (int x = 0; x < result.cols(); x++) {
+                //BGR
+                double[] pixel = result.get(y, x);
+                double c1 = Math.atan(pixel[0] / Math.max(pixel[1], pixel[2])) * 255;
+                double c2 = Math.atan(pixel[1] / Math.max(pixel[0], pixel[2])) * 255;
+                double c3 = Math.atan(pixel[2] / Math.max(pixel[0], pixel[1])) * 255;
+                result.put(y, x, c1, c2, c3);
+            }
+        return result;
+    }
+
+    private Mat getBlob(Mat input) {
+        Mat result = new Mat();
+        input.copyTo(result);
+        ColorBlobDetector colorBlob = new ColorBlobDetector();
+
+        Mat regionHsv = new Mat();
+        Imgproc.cvtColor(input, regionHsv, Imgproc.COLOR_RGB2HSV_FULL);
+
+        // Calculate average color of touched region
+        Scalar mBlobColorHsv = Core.sumElems(regionHsv);
+        int pointCount = 0;
+        for (int y = 0; y < input.rows(); y++)
+            for (int x = 0; x < input.cols(); x++) {
+                if (input.get(y, x)[0] == 0 && input.get(y, x)[1] == 0 && input.get(y, x)[2] == 0) {
+                    continue;
+                } else {
+                    pointCount++;
+                }
+            }
+        for (int i = 0; i < mBlobColorHsv.val.length; i++)
+            mBlobColorHsv.val[i] /= pointCount;
+
+        colorBlob.setHsvColor(mBlobColorHsv);
+        colorBlob.process(input);
+
+        for (int i = 0; i < colorBlob.getContours().size(); i++)
+            Imgproc.drawContours(result, colorBlob.getContours(), i, new Scalar( new Random().nextInt(255), new Random().nextInt(255)), -1);
+
+
+        return result;
+    }
+
+    Rect2d trackingArea;
+    double[] bestRect = new double[5];
+    double backgroundDensity = 0;
+
+    private Mat convertOFMat2BinaryMat(Mat flow) {
+        Mat result = new Mat(flow.size(), CvType.CV_8UC1);
+        for (int y = 0; y < flow.rows(); y++)
+            for (int x = 0; x < flow.cols(); x++) {
+                double[] flowAt = flow.get(y, x);
+                if (Math.abs(flowAt[0]) > 0.5 || Math.abs(flowAt[1]) > 0.5) {
+                    result.put(y, x, 255);
+                } else {
+                    result.put(y, x, 0);
+                }
+            }
+        return result;
+    }
+
+    private MatOfRect filterPersonArea(MatOfRect foundLocations, MatOfDouble foundWeights) {
+        if (foundWeights.rows() != 0) {
+            List<Rect> rects = foundLocations.toList();
+            List<Double> ws = foundWeights.toList();
+            List<Rect> newList = new ArrayList<>();
+            log("#Filter");
+            for (Double d : ws) {
+                log("#Frame:" + frameCounter + " Person Prob: " + d);
+                if (d > 0.5) {
+                    newList.add(rects.get(ws.indexOf(d)));
+                    log("!!! Person detected !!!");
+                }
+            }
+            if (newList.size() != 0) {
+                foundLocations.fromList(newList);
+            } else {
+                foundLocations = new MatOfRect();
+            }
+        }
+        return foundLocations;
+    }
+
+    private int isBestRectDetected(Rect bestrect, MatOfRect rects) {
+        List<Rect> rectslist = rects.toList();
+        for (int i = 0; i < rectslist.size(); i++) {
+            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private Mat getMostSalientForegroundObject(Mat input) {
+        Mat mask = new Mat();
+        bgknn.apply(input, mask, 0.1);
+        Mat fgmaskClosed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
+        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
+        Mat labels = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+        int connectivity = 8;
+        Imgproc.connectedComponentsWithStats(fgmaskClosed, labels, stats, centroids,
+                connectivity, CvType.CV_32S);
+        double sum = 0;
+        for (int i = 0; i < stats.rows(); i++) {
+            sum += stats.get(i, 4)[0];
+        }
+        backgroundDensity = stats.get(0, 4)[0] / sum;
+        bestRect = new double[5];
+        if (stats.rows() < 2) {
+            bestRect = new double[]{-1, -1, -1, -1, -1};
+        } else {
+            int mostSalientIndex = 1;
+            double max = 0;
+            for (int i = 1; i < stats.rows(); i++) {
+                if (stats.get(i, 4)[0] > max) {
+                    max = stats.get(i, 4)[0];
+                    mostSalientIndex = i;
+                }
+            }
+            for (int i = 0; i < bestRect.length; i++)
+                bestRect[i] = stats.get(mostSalientIndex, i)[0];
+        }
+        return fgmaskClosed;
     }
 
 

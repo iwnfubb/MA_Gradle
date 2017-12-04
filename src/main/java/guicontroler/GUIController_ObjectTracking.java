@@ -115,7 +115,6 @@ public class GUIController_ObjectTracking {
                         }
                     }
 
-                    frameCounter = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
                     Mat gaussianBlurFrame = imgProcess.getGaussianBlur(originalFrame);
