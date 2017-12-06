@@ -725,9 +725,40 @@ public class ImageProcess_ObjectTracking {
         log("findContours");
         List<MatOfPoint> contours = new ArrayList<>();
         Imgproc.findContours(fgmaskClosed, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
         Mat foregroundMask = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
         for (int i = 0; i < contours.size(); i++)
             Imgproc.drawContours(foregroundMask, contours, i, new Scalar(255), -1);
+
+        //find bounding curve
+        Mat foregroundMaskWithBorder = new Mat();
+        Core.copyMakeBorder(foregroundMask, foregroundMaskWithBorder, 10, 10, 10, 10, Core.BORDER_CONSTANT);
+        List<MatOfPoint> boundingContours = new ArrayList<>();
+        Imgproc.findContours(foregroundMaskWithBorder, boundingContours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        //hull curve
+        Mat boundingCurve = new Mat(foregroundMaskWithBorder.size(), CvType.CV_8UC1, new Scalar(0));
+        List<MatOfInt> hullCurve = new ArrayList<>();
+        for (int i = 0; i < boundingContours.size(); i++) {
+            MatOfInt hull = new MatOfInt();
+            Imgproc.drawContours(boundingCurve, boundingContours, i, new Scalar(255), 1);
+            Imgproc.convexHull(boundingContours.get(i), hull, true);
+            hullCurve.add(hull);
+        }
+        //draw hull points
+
+        for (int i = 0; i < boundingContours.size(); i++) {
+            MatOfInt hull = hullCurve.get(i);
+            int index = (int) hull.get(((int) hull.size().height) - 1, 0)[0];
+            Point pt, pt0 = new Point(boundingContours.get(i).get(index, 0)[0], boundingContours.get(i).get(index, 0)[1]);
+            for (int j = 0; j < hull.size().height - 1; j++) {
+                index = (int) hull.get(j, 0)[0];
+                pt = new Point(boundingContours.get(i).get(index, 0)[0], boundingContours.get(i).get(index, 0)[1]);
+                Imgproc.line(boundingCurve, pt0, pt, new Scalar(255), 1);
+                Imgproc.circle(boundingCurve, pt0, 5,
+                        new Scalar(255), -5, 4, 0);
+                pt0 = pt;
+            }
+        }
 
         //Input with foreground mask
         Mat inputWithForeGroundMask = new Mat();
@@ -741,8 +772,9 @@ public class ImageProcess_ObjectTracking {
         Imgproc.cvtColor(inputWithForeGroundMask, blobImage, Imgproc.COLOR_RGB2GRAY);
         blob.detect(blobImage, blobKeyPoint);
 
+
         Features2d.drawKeypoints(blobImage, blobKeyPoint, blobImage, new Scalar(0, 0, 255, 0), 4);
-        return new Mat[]{inputWithForeGroundMask, fgmaskClosed, blobImage};
+        return new Mat[]{inputWithForeGroundMask, foregroundMask, boundingCurve};
     }
 
     private Mat convertImageByInvariantFeatures(Mat input) {
@@ -786,7 +818,7 @@ public class ImageProcess_ObjectTracking {
         colorBlob.process(input);
 
         for (int i = 0; i < colorBlob.getContours().size(); i++)
-            Imgproc.drawContours(result, colorBlob.getContours(), i, new Scalar( new Random().nextInt(255), new Random().nextInt(255)), -1);
+            Imgproc.drawContours(result, colorBlob.getContours(), i, new Scalar(new Random().nextInt(255), new Random().nextInt(255)), -1);
 
 
         return result;
