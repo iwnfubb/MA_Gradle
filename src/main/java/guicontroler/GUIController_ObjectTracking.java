@@ -164,11 +164,11 @@ public class GUIController_ObjectTracking {
                     //if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty() && !flow.empty()) {
                     if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
                         //Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
-                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector(originalFrame);
+                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector2(originalFrame);
                         //Mat[] grabcutFrameAndMatches = imgProcess.imageSegmentaion(originalFrame);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
-                        if (grabcutFrameAndMatches.length == 3) {
+                        if (grabcutFrameAndMatches.length >= 3) {
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[1]);
                             updateImageView(matchesView, mmgImageToShow);
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[2]);

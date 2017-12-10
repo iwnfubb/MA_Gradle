@@ -2,6 +2,7 @@ package imageprocess;
 
 import algorithms.Clustering;
 import algorithms.ColorBlobDetector;
+import algorithms.PostureDetector;
 import net.sf.javaml.clustering.OPTICS;
 import net.sf.javaml.core.Dataset;
 import net.sf.javaml.core.DefaultDataset;
@@ -48,6 +49,7 @@ public class ImageProcess_ObjectTracking {
     Tracker tracker;
     boolean startTracking = false;
     FeatureDetector blob;
+    PostureDetector postureDetector;
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
         this.capture = capture;
@@ -75,6 +77,8 @@ public class ImageProcess_ObjectTracking {
         blob.read("blob.xml");
 
         createMyTracker();
+
+        postureDetector = new PostureDetector();
     }
 
     private void createMyTracker() {
@@ -561,7 +565,7 @@ public class ImageProcess_ObjectTracking {
             Mat[] segmentations = new Mat[3];
             if (startTracking) {
                 Mat imageROI = new Mat(person, newRect);
-                segmentations = imageSegmentaion2(imageROI);
+                segmentations = imageSegmentaion3(imageROI);
                 hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                         finalThreshold, useMeanshiftGrouping);
                 if (foundWeights.rows() != 0) {
@@ -582,6 +586,28 @@ public class ImageProcess_ObjectTracking {
             return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
         }
 
+    }
+
+
+    public Mat[] personDetector2(Mat input) {
+        frameCounter++;
+        backgroundDensity = 0;
+
+        Mat imageWithBestRect = new Mat();
+        input.copyTo(imageWithBestRect);
+        Mat connectedMat = getMostSalientForegroundObject(input);
+        Mat[] segmentations;
+        Rect r = new Rect(bestRect);
+        MatOfRect bestRect = new MatOfRect();
+        bestRect.fromArray(r);
+        drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
+        if (backgroundDensity > 0.8) {
+            Mat imageROI = new Mat(input, r);
+            segmentations = imageSegmentaion3(imageROI);
+            return new Mat[]{imageWithBestRect, connectedMat, imageROI, segmentations[0], segmentations[1], segmentations[2]};
+        } else {
+            return new Mat[]{imageWithBestRect};
+        }
     }
 
     public Mat[] imageSegmentaion(Mat input) {
@@ -776,6 +802,55 @@ public class ImageProcess_ObjectTracking {
         Features2d.drawKeypoints(blobImage, blobKeyPoint, blobImage, new Scalar(0, 0, 255, 0), 4);
         return new Mat[]{inputWithForeGroundMask, foregroundMask, boundingCurve};
     }
+
+
+    public Mat[] imageSegmentaion3(Mat input) {
+        double thresh = 70;
+        Mat edges = new Mat();
+        //Canny
+        log("Canny");
+        Mat inputWithinvariantFeatures = new Mat();
+        convertImageByInvariantFeatures(input).copyTo(inputWithinvariantFeatures);
+        Imgproc.cvtColor(inputWithinvariantFeatures, edges, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Canny(edges, edges, thresh, thresh * 1.5, 3, true);
+
+        //Mor
+        log("morphologyEx");
+        Mat fgmaskClosed = new Mat();
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.morphologyEx(edges, fgmaskClosed, Imgproc.MORPH_GRADIENT, kernel);
+
+        //Contours -> Foreground mask
+        log("findContours");
+        List<MatOfPoint> contours = new ArrayList<>();
+        Imgproc.findContours(fgmaskClosed, contours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+        Mat foregroundMask = new Mat(edges.size(), CvType.CV_8UC1, new Scalar(0));
+        for (int i = 0; i < contours.size(); i++)
+            Imgproc.drawContours(foregroundMask, contours, i, new Scalar(255), -1);
+
+        //find bounding curve
+        Mat foregroundMaskWithBorder = new Mat();
+        Core.copyMakeBorder(foregroundMask, foregroundMaskWithBorder, 10, 10, 10, 10, Core.BORDER_CONSTANT);
+        List<MatOfPoint> boundingContours = new ArrayList<>();
+        Imgproc.findContours(foregroundMaskWithBorder, boundingContours, new Mat(), Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+        Mat boundingCurve = new Mat(foregroundMaskWithBorder.size(), CvType.CV_8UC1, new Scalar(0));
+        for (int i = 0; i < boundingContours.size(); i++) {
+            Imgproc.drawContours(boundingCurve, boundingContours, i, new Scalar(255), 1);
+        }
+
+        //Input with foreground mask
+        Mat inputWithForeGroundMask = new Mat();
+        input.copyTo(inputWithForeGroundMask, foregroundMask);
+
+
+        String posture = postureDetector.detect(foregroundMaskWithBorder);
+        Imgproc.putText(foregroundMaskWithBorder, posture, new Point(10, 10),
+                0, 0.5, new Scalar(255), 2);
+
+        return new Mat[]{inputWithForeGroundMask, foregroundMask, foregroundMaskWithBorder};
+    }
+
 
     private Mat convertImageByInvariantFeatures(Mat input) {
         Mat result = new Mat();
