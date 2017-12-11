@@ -25,6 +25,7 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.xfeatures2d.SURF;
 import utils.KeyPointsAndFeaturesVector;
 
+import javax.swing.text.MaskFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -47,7 +48,7 @@ public class ImageProcess_ObjectTracking {
     BackgroundSubtractorMOG2 mog2;
     BackgroundSubtractorKNN bgknn;
     Tracker tracker;
-    boolean startTracking = false;
+    public boolean startTracking = false;
     FeatureDetector blob;
     PostureDetector postureDetector;
 
@@ -68,10 +69,10 @@ public class ImageProcess_ObjectTracking {
         hog.setSVMDetector(peopleDetector);
 
         this.mog2 = Video.createBackgroundSubtractorMOG2();
-        mog2.setHistory(10);
+        mog2.setHistory(50);
 
         this.bgknn = Video.createBackgroundSubtractorKNN();
-        bgknn.setHistory(10);
+        bgknn.setHistory(50);
 
         blob = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
         blob.read("blob.xml");
@@ -565,7 +566,8 @@ public class ImageProcess_ObjectTracking {
             Mat[] segmentations = new Mat[3];
             if (startTracking) {
                 Mat imageROI = new Mat(person, newRect);
-                segmentations = imageSegmentaion3(imageROI);
+                Mat connectedMatROI = new Mat(connectedMat, newRect);
+                segmentations = imageSegmentaion3(imageROI, connectedMatROI);
                 hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                         finalThreshold, useMeanshiftGrouping);
                 if (foundWeights.rows() != 0) {
@@ -588,25 +590,51 @@ public class ImageProcess_ObjectTracking {
 
     }
 
+    boolean tracking = false;
 
     public Mat[] personDetector2(Mat input) {
-        frameCounter++;
-        backgroundDensity = 0;
+        Mat person = new Mat();
+        input.copyTo(person);
+        if (!startTracking) {
+            tracking = false;
+            frameCounter++;
+            backgroundDensity = 0;
 
-        Mat imageWithBestRect = new Mat();
-        input.copyTo(imageWithBestRect);
-        Mat connectedMat = getMostSalientForegroundObject(input);
-        Mat[] segmentations;
-        Rect r = new Rect(bestRect);
-        MatOfRect bestRect = new MatOfRect();
-        bestRect.fromArray(r);
-        drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
-        if (backgroundDensity > 0.8) {
-            Mat imageROI = new Mat(input, r);
-            segmentations = imageSegmentaion3(imageROI);
-            return new Mat[]{imageWithBestRect, connectedMat, imageROI, segmentations[0], segmentations[1], segmentations[2]};
+            Mat imageWithBestRect = new Mat();
+            input.copyTo(imageWithBestRect);
+            Mat connectedMat = getMostSalientForegroundObject(input);
+            Mat[] segmentations;
+            Rect r = new Rect(bestRect);
+            MatOfRect bestRect = new MatOfRect();
+            bestRect.fromArray(r);
+            drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
+
+            if (backgroundDensity > 0.8) {
+                Mat imageROI = new Mat(input, r);
+                Mat connectedMatROI = new Mat(connectedMat, r);
+                segmentations = imageSegmentaion3(imageROI, connectedMatROI);
+                return new Mat[]{imageWithBestRect, connectedMat, imageROI, segmentations[0], segmentations[1], segmentations[2]};
+            } else {
+                return new Mat[]{imageWithBestRect};
+            }
         } else {
-            return new Mat[]{imageWithBestRect};
+            if (!tracking) {
+                Mat imageWithBestRect = new Mat();
+                input.copyTo(imageWithBestRect);
+                Mat connectedMat = getMostSalientForegroundObject(input);
+                Rect r = new Rect(bestRect);
+                trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
+                createMyTracker();
+                tracker.init(input, trackingArea);
+                tracking = true;
+            } else {
+                tracking = tracker.update(person, trackingArea);
+            }
+            MatOfRect trackingBoxes = new MatOfRect();
+            Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
+            trackingBoxes.fromArray(newRect);
+            drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
+            return new Mat[]{person};
         }
     }
 
@@ -804,7 +832,7 @@ public class ImageProcess_ObjectTracking {
     }
 
 
-    public Mat[] imageSegmentaion3(Mat input) {
+    public Mat[] imageSegmentaion3(Mat input, Mat connectedMatROI) {
         double thresh = 70;
         Mat edges = new Mat();
         //Canny
@@ -829,6 +857,7 @@ public class ImageProcess_ObjectTracking {
         for (int i = 0; i < contours.size(); i++)
             Imgproc.drawContours(foregroundMask, contours, i, new Scalar(255), -1);
 
+        Core.bitwise_and(foregroundMask, connectedMatROI, foregroundMask);
         //find bounding curve
         Mat foregroundMaskWithBorder = new Mat();
         Core.copyMakeBorder(foregroundMask, foregroundMaskWithBorder, 10, 10, 10, 10, Core.BORDER_CONSTANT);
@@ -847,6 +876,16 @@ public class ImageProcess_ObjectTracking {
         String posture = postureDetector.detect(foregroundMaskWithBorder);
         Imgproc.putText(foregroundMaskWithBorder, posture, new Point(10, 10),
                 0, 0.5, new Scalar(255), 2);
+
+        //grabcut
+        /*Mat mask = new Mat(foregroundMask.size(), CvType.CV_8UC1, Scalar.all(Imgproc.GC_PR_BGD));
+        for (int y = 0; y < foregroundMask.rows(); y++)
+            for (int x = 0; x < foregroundMask.cols(); x++) {
+                if (foregroundMask.get(y, x)[0] != 0) {
+                    mask.put(y, x, Imgproc.GC_PR_FGD);
+                }
+            }
+        Mat grabcutMask = grabCutWithMask(input, mask);*/
 
         return new Mat[]{inputWithForeGroundMask, foregroundMask, foregroundMaskWithBorder};
     }
@@ -952,15 +991,24 @@ public class ImageProcess_ObjectTracking {
     private Mat getMostSalientForegroundObject(Mat input) {
         Mat mask = new Mat();
         bgknn.apply(input, mask, 0.1);
+
         Mat fgmaskClosed = new Mat();
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
         Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
+
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
         int connectivity = 8;
         Imgproc.connectedComponentsWithStats(fgmaskClosed, labels, stats, centroids,
                 connectivity, CvType.CV_32S);
+
+
+        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.erode(fgmaskClosed, fgmaskClosed, kernelErode);
+        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
+        Imgproc.dilate(fgmaskClosed, fgmaskClosed, kernelDalate);
+
         double sum = 0;
         for (int i = 0; i < stats.rows(); i++) {
             sum += stats.get(i, 4)[0];

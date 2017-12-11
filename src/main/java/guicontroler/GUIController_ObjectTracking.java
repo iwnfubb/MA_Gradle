@@ -63,6 +63,8 @@ public class GUIController_ObjectTracking {
     @FXML
     private Button button;
     @FXML
+    private Button setStaticBackground;
+    @FXML
     private TextField epsilon;
     @FXML
     private TextField minPoints;
@@ -97,7 +99,7 @@ public class GUIController_ObjectTracking {
             if (liveVideo) {
                 this.capture.open(cameraId);
             } else {
-                this.capture.open("v_slowwalk.mp4");
+                this.capture.open("v_dead.mp4");
             }
             ini();
             // is the video stream available?
@@ -174,7 +176,7 @@ public class GUIController_ObjectTracking {
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[2]);
                             updateImageView(maskView, mmgImageToShow);
                         }
-                        if (grabcutFrameAndMatches.length == 6){
+                        if (grabcutFrameAndMatches.length == 6) {
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[3]);
                             updateImageView(surfImgView, mmgImageToShow);
                             mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[4]);
@@ -212,7 +214,12 @@ public class GUIController_ObjectTracking {
 
     @FXML
     protected void setStaticBackground(ActionEvent event) {
-        System.out.println("Not supported");
+        if (imgProcess.startTracking == false) {
+            imgProcess.startTracking = true;
+        } else {
+            imgProcess.startTracking = false;
+        }
+
     }
 
     private void stopAcquisition() {
