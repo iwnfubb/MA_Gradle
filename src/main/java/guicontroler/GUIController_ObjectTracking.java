@@ -167,7 +167,7 @@ public class GUIController_ObjectTracking {
                     //if (!gaussianBlurFrame.empty() && !surfKeyPoint.empty() && grabcutActive.isSelected() && !previousFrameFlow.empty() && !flow.empty()) {
                     if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
                         //Mat[] grabcutFrameAndMatches = imgProcess.tobiModel_Upgrade(originalFrame, surfKeyPoint, previousFrameFlow, eps, minP);
-                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector2(originalFrame);
+                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector(originalFrame);
                         //Mat[] grabcutFrameAndMatches = imgProcess.imageSegmentaion(originalFrame);
                         Image mmgImageToShow = Utils.mat2Image(grabcutFrameAndMatches[0]);
                         updateImageView(grabcutView, mmgImageToShow);
@@ -215,11 +215,11 @@ public class GUIController_ObjectTracking {
 
     @FXML
     protected void startTracking(ActionEvent event) {
-        if (imgProcess.startTracking == false) {
-            imgProcess.startTracking = true;
+        if (!imgProcess.personTracker.isTracking()) {
+            imgProcess.personTracker.startTracking();
             button2.setText("Stop tracking");
         } else {
-            imgProcess.startTracking = false;
+            imgProcess.personTracker.stopTracking();
             button2.setText("Start tracking");
         }
 
