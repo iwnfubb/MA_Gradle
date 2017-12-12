@@ -203,7 +203,7 @@
     <bottom>
         <BorderPane prefHeight="36.0" prefWidth="800.0" BorderPane.alignment="CENTER">
             <right>
-                <Button fx:id="button2" mnemonicParsing="false" onAction="#setStaticBackground" prefHeight="31.0" prefWidth="219.0" text="Set Current Frame As BG" BorderPane.alignment="CENTER" />
+                <Button fx:id="button2" mnemonicParsing="false" onAction="#startTracking" prefHeight="31.0" prefWidth="219.0" text="Start Tracking" BorderPane.alignment="CENTER" />
             </right>
          <left>
                 <Button fx:id="button" mnemonicParsing="false" onAction="#startCamera" prefHeight="31.0" prefWidth="155.0" text="Start Camera" BorderPane.alignment="CENTER" />

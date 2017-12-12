@@ -63,7 +63,7 @@ public class GUIController_ObjectTracking {
     @FXML
     private Button button;
     @FXML
-    private Button setStaticBackground;
+    private Button button2;
     @FXML
     private TextField epsilon;
     @FXML
@@ -113,7 +113,8 @@ public class GUIController_ObjectTracking {
                             capture.set(Videoio.CAP_PROP_POS_FRAMES, frameCounter);
                             trigger = false;
                         } else {
-                            timerbar.setValue(frameCounter);
+                            timerbar.setValue(++frameCounter);
+                            trigger = false;
                         }
                     }
 
@@ -213,11 +214,13 @@ public class GUIController_ObjectTracking {
 
 
     @FXML
-    protected void setStaticBackground(ActionEvent event) {
+    protected void startTracking(ActionEvent event) {
         if (imgProcess.startTracking == false) {
             imgProcess.startTracking = true;
+            button2.setText("Stop tracking");
         } else {
             imgProcess.startTracking = false;
+            button2.setText("Start tracking");
         }
 
     }
