@@ -25,7 +25,8 @@ public class PersonTracker {
     FeatureDetector blob;
     PostureDetector postureDetector;
     boolean tracking = false;
-
+    MatOfRect oldTrackingBoxes = new MatOfRect();
+    Rect last_rect = new Rect();
 
     public PersonTracker() {
         this.hog = new HOGDescriptor();
@@ -43,13 +44,15 @@ public class PersonTracker {
         postureDetector = new PostureDetector();
     }
 
-    public void startTracking(){
+    public void startTracking() {
         startTracking = true;
     }
-    public void stopTracking(){
+
+    public void stopTracking() {
         startTracking = false;
     }
-    public boolean isTracking(){
+
+    public boolean isTracking() {
         return startTracking;
     }
 
@@ -92,19 +95,30 @@ public class PersonTracker {
         } else {
             Mat connectedMat = getMostSalientForegroundObject(input);
             startTracking = tracker.update(person, trackingArea);
-            MatOfRect trackingBoxes = new MatOfRect();
+            MatOfRect newTrackingBoxes = new MatOfRect();
             Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
-            trackingBoxes.fromArray(newRect);
+            newTrackingBoxes.fromArray(newRect);
+
             Mat[] segmentations = new Mat[3];
+            boolean isPersonThere = false;
             if (startTracking) {
                 Mat imageROI = new Mat(person, newRect);
                 Mat connectedMatROI = new Mat(connectedMat, newRect);
                 segmentations = imageSegmentaion3(imageROI, connectedMatROI);
+
+                //if false positive -> calculate based on last rect
+                if (postureDetector.falsePositive) {
+                    //Core and
+                    newRect = last_rect;
+                    imageROI = new Mat(person, newRect);
+                    connectedMatROI = new Mat(connectedMat, newRect);
+                    segmentations = imageSegmentaion3(imageROI, connectedMatROI);
+                }
                 hog.detectMultiScale(imageROI, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                         finalThreshold, useMeanshiftGrouping);
                 if (foundWeights.rows() != 0) {
                     List<Double> doubles = foundWeights.toList();
-                    boolean isPersonThere = false;
+
                     log("#Recheck ");
                     for (Double d : doubles) {
                         if (d > 0.5) {
@@ -115,7 +129,22 @@ public class PersonTracker {
                     startTracking = startTracking && isPersonThere;
                 }
             }
-            drawRect(person, trackingBoxes, new Scalar(0, 255, 0));
+
+            if (!startTracking && !isPersonThere) {
+                Rect r = new Rect(bestRect);
+                MatOfRect bestRect = new MatOfRect();
+                bestRect.fromArray(r);
+                trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
+                newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
+                newTrackingBoxes.fromArray(newRect);
+                createMyTracker();
+                tracker.init(input, trackingArea);
+                startTracking = true;
+            }
+
+            drawRect(person, newTrackingBoxes, new Scalar(0, 255, 0));
+            newTrackingBoxes.copyTo(oldTrackingBoxes);
+            last_rect = newRect;
             return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
         }
     }
@@ -311,6 +340,33 @@ public class PersonTracker {
 
 
         return result;
+    }
+
+    private double calculateArea(MatOfRect rect) {
+        return rect.get(0, 0)[2] * rect.get(0, 0)[3];
+    }
+
+    private boolean similarArea(MatOfRect rect1, MatOfRect rect2) {
+        double a1 = rect1.get(0, 0)[2] * rect1.get(0, 0)[3];
+        double a2 = rect2.get(0, 0)[2] * rect2.get(0, 0)[3];
+        if (a1 < a2 && a2 - a1 < a1)
+            return true;
+        if (a2 < a1 && a1 - a2 < a2)
+            return true;
+        return false;
+    }
+
+    private boolean overlaps(MatOfRect rect1, MatOfRect rect2) {
+        double x1 = rect1.get(0, 0)[0];
+        double y1 = rect1.get(0, 0)[1];
+        double w1 = rect1.get(0, 0)[2];
+        double h1 = rect1.get(0, 0)[3];
+        double x2 = rect2.get(0, 0)[0];
+        double y2 = rect2.get(0, 0)[1];
+        double w2 = rect2.get(0, 0)[2];
+        double h2 = rect2.get(0, 0)[3];
+        return x1 < x2 + w2 && x1 + w1 > x2
+                && y1 < y2 + h2 && y1 + h1 > y2;
     }
 
 
@@ -552,16 +608,6 @@ public class PersonTracker {
         String posture = postureDetector.detect(foregroundMaskWithBorder);
         Imgproc.putText(foregroundMaskWithBorder, posture, new Point(10, 10),
                 0, 0.5, new Scalar(255), 2);
-
-        //grabcut
-        /*Mat mask = new Mat(foregroundMask.size(), CvType.CV_8UC1, Scalar.all(Imgproc.GC_PR_BGD));
-        for (int y = 0; y < foregroundMask.rows(); y++)
-            for (int x = 0; x < foregroundMask.cols(); x++) {
-                if (foregroundMask.get(y, x)[0] != 0) {
-                    mask.put(y, x, Imgproc.GC_PR_FGD);
-                }
-            }
-        Mat grabcutMask = grabCutWithMask(input, mask);*/
 
         return new Mat[]{inputWithForeGroundMask, foregroundMask, foregroundMaskWithBorder};
     }
