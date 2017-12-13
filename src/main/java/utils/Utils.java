@@ -5,6 +5,9 @@ import javafx.beans.property.ObjectProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Rect2d;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -60,4 +63,66 @@ public final class Utils {
 
         return image;
     }
+
+
+    public static double calculateArea(MatOfRect rect) {
+        return rect.get(0, 0)[2] * rect.get(0, 0)[3];
+    }
+
+
+    public static boolean similarArea(MatOfRect rect1, MatOfRect rect2) {
+        double a1 = rect1.get(0, 0)[2] * rect1.get(0, 0)[3];
+        double a2 = rect2.get(0, 0)[2] * rect2.get(0, 0)[3];
+        if (a1 < a2 && a2 - a1 < a1)
+            return true;
+        if (a2 < a1 && a1 - a2 < a2)
+            return true;
+        return false;
+    }
+
+
+    public static boolean overlaps(MatOfRect rect1, MatOfRect rect2) {
+        double x1 = rect1.get(0, 0)[0];
+        double y1 = rect1.get(0, 0)[1];
+        double w1 = rect1.get(0, 0)[2];
+        double h1 = rect1.get(0, 0)[3];
+        double x2 = rect2.get(0, 0)[0];
+        double y2 = rect2.get(0, 0)[1];
+        double w2 = rect2.get(0, 0)[2];
+        double h2 = rect2.get(0, 0)[3];
+        return x1 < x2 + w2 && x1 + w1 > x2
+                && y1 < y2 + h2 && y1 + h1 > y2;
+    }
+
+
+    public static double euclideandistance(Rect rect1, Rect rect2) {
+        double centerX1 = rect1.x + rect1.width / 2;
+        double centerY1 = rect1.y + rect1.height / 2;
+        double centerX2 = rect2.x + rect2.width / 2;
+        double centerY2 = rect2.y + rect2.height / 2;
+        return Math.sqrt(Math.pow(centerX1 - centerX2, 2) + Math.pow(centerY1 - centerY2, 2));
+    }
+
+
+    public static Rect convertDoubleToRect(double[] bestRect) {
+        return new Rect(bestRect);
+    }
+
+    public static Rect2d convertRectToRect2d(Rect r) {
+        return new Rect2d(r.x, r.y, r.width, r.height);
+    }
+
+
+    public static Rect convertRect2dToRect(Rect2d r) {
+        return new Rect((int) r.x, (int) r.y, (int) r.width, (int) r.height);
+    }
+
+    public static MatOfRect convertDoubleToMatOfRect(double[] bestRect) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(convertDoubleToRect(bestRect));
+        return matOfRect;
+    }
+
+
+
 }

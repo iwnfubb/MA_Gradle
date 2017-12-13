@@ -1,5 +1,6 @@
 package algorithms;
 
+import com.sun.org.apache.regexp.internal.RE;
 import org.opencv.core.*;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
@@ -9,7 +10,9 @@ import org.opencv.tracking.Tracker;
 import org.opencv.tracking.TrackerKCF;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.Video;
+import utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -28,13 +31,22 @@ public class PersonTracker {
     MatOfRect oldTrackingBoxes = new MatOfRect();
     Rect last_rect = new Rect();
 
+    //HOG Parameter
+    double hitThreshold = 0;
+    Size winStride = new Size(4, 4);
+    Size padding = new Size(8, 8);
+    double scale = 1.05;
+    boolean useMeanshiftGrouping = true;
+    double finalThreshold = 0;
+
+
     public PersonTracker() {
         this.hog = new HOGDescriptor();
         MatOfFloat peopleDetector = HOGDescriptor.getDefaultPeopleDetector();
         hog.setSVMDetector(peopleDetector);
 
         this.bgknn = Video.createBackgroundSubtractorKNN();
-        bgknn.setHistory(50);
+        bgknn.setHistory(10);
 
         blob = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
         blob.read("blob.xml");
@@ -62,31 +74,24 @@ public class PersonTracker {
         input.copyTo(person);
         MatOfRect foundLocations = new MatOfRect();
         MatOfDouble foundWeights = new MatOfDouble();
-        double hitThreshold = 0;
-        Size winStride = new Size(4, 4);
-        Size padding = new Size(8, 8);
-        double scale = 1.05;
-        boolean useMeanshiftGrouping = true;
-        double finalThreshold = 0;
+
         if (!startTracking) {
+            Mat connectedMat = getMostSalientForegroundObject(input);
+            Mat imageWithBestRect = new Mat();
+
             hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
                     finalThreshold, useMeanshiftGrouping);
             foundLocations = filterPersonArea(foundLocations, foundWeights);
             drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
-            Mat connectedMat = getMostSalientForegroundObject(input);
-            Mat imageWithBestRect = new Mat();
             input.copyTo(imageWithBestRect);
-            Rect r = new Rect(bestRect);
-            MatOfRect bestRect = new MatOfRect();
-            bestRect.fromArray(r);
-            drawRect(person, bestRect, new Scalar(255, 0, 0));
-            drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
+            drawImageWithRect(imageWithBestRect, bestRect);
+            drawImageWithRect(person, bestRect);
+            Rect r = Utils.convertDoubleToRect(bestRect);
             log("Background backgroundDensity: " + backgroundDensity);
-            int index;
-            if ((index = isBestRectDetected(r, foundLocations)) != -1 && backgroundDensity > 0.8) {
-                //Rect trackRect = foundLocations.toList().get(index);
-                trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
+
+            if (isBestRectDetected(r, foundLocations) != -1 && backgroundDensity > 0.8) {
+                trackingArea = Utils.convertRectToRect2d(r);
                 createMyTracker();
                 tracker.init(input, trackingArea);
                 startTracking = true;
@@ -95,8 +100,9 @@ public class PersonTracker {
         } else {
             Mat connectedMat = getMostSalientForegroundObject(input);
             startTracking = tracker.update(person, trackingArea);
+
             MatOfRect newTrackingBoxes = new MatOfRect();
-            Rect newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
+            Rect newRect = Utils.convertRect2dToRect(trackingArea);
             newTrackingBoxes.fromArray(newRect);
 
             Mat[] segmentations = new Mat[3];
@@ -131,11 +137,11 @@ public class PersonTracker {
             }
 
             if (!startTracking && !isPersonThere) {
-                Rect r = new Rect(bestRect);
+                Rect r = Utils.convertDoubleToRect(bestRect);
                 MatOfRect bestRect = new MatOfRect();
                 bestRect.fromArray(r);
-                trackingArea = new Rect2d(r.x, r.y, r.width, r.height);
-                newRect = new Rect((int) trackingArea.x, (int) trackingArea.y, (int) trackingArea.width, (int) trackingArea.height);
+                trackingArea = Utils.convertRectToRect2d(r);
+                newRect = Utils.convertRect2dToRect(trackingArea);
                 newTrackingBoxes.fromArray(newRect);
                 createMyTracker();
                 tracker.init(input, trackingArea);
@@ -144,6 +150,13 @@ public class PersonTracker {
 
             drawRect(person, newTrackingBoxes, new Scalar(0, 255, 0));
             newTrackingBoxes.copyTo(oldTrackingBoxes);
+            boolean objectMoving = MovingDetector.isObjectMoving(last_rect, newRect);
+            String moving = "";
+            if (objectMoving)
+                moving = "Moving";
+
+            Imgproc.putText(person, moving, new Point(30, 30),
+                    0, 2, new Scalar(0, 0, 255), 3);
             last_rect = newRect;
             return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
         }
@@ -342,31 +355,12 @@ public class PersonTracker {
         return result;
     }
 
-    private double calculateArea(MatOfRect rect) {
-        return rect.get(0, 0)[2] * rect.get(0, 0)[3];
-    }
-
-    private boolean similarArea(MatOfRect rect1, MatOfRect rect2) {
-        double a1 = rect1.get(0, 0)[2] * rect1.get(0, 0)[3];
-        double a2 = rect2.get(0, 0)[2] * rect2.get(0, 0)[3];
-        if (a1 < a2 && a2 - a1 < a1)
-            return true;
-        if (a2 < a1 && a1 - a2 < a2)
-            return true;
-        return false;
-    }
-
-    private boolean overlaps(MatOfRect rect1, MatOfRect rect2) {
-        double x1 = rect1.get(0, 0)[0];
-        double y1 = rect1.get(0, 0)[1];
-        double w1 = rect1.get(0, 0)[2];
-        double h1 = rect1.get(0, 0)[3];
-        double x2 = rect2.get(0, 0)[0];
-        double y2 = rect2.get(0, 0)[1];
-        double w2 = rect2.get(0, 0)[2];
-        double h2 = rect2.get(0, 0)[3];
-        return x1 < x2 + w2 && x1 + w1 > x2
-                && y1 < y2 + h2 && y1 + h1 > y2;
+    private Mat drawImageWithRect(Mat input, double[] bestRect) {
+        Rect r = new Rect(bestRect);
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(r);
+        drawRect(input, matOfRect, new Scalar(255, 0, 0));
+        return input;
     }
 
 
