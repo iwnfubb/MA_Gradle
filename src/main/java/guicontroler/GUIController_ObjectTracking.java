@@ -1,11 +1,9 @@
 package guicontroler;
 
 import imageprocess.ImageProcess_ObjectTracking;
-import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
 import org.opencv.features2d.Features2d;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.Videoio;
 import utils.Utils;
 import javafx.event.ActionEvent;
@@ -106,7 +104,6 @@ public class GUIController_ObjectTracking {
             if (this.capture.isOpened()) {
                 this.cameraActive = true;
 
-                // grab a frame every 33 ms (30 frames/sec)
                 Runnable frameGrabber = () -> {
                     if (!liveVideo) {
                         if (trigger) {
@@ -215,11 +212,11 @@ public class GUIController_ObjectTracking {
 
     @FXML
     protected void startTracking(ActionEvent event) {
-        if (!imgProcess.personTracker.isTracking()) {
-            imgProcess.personTracker.startTracking();
+        if (!imgProcess.personDetectorAndTracking.isTracking()) {
+            imgProcess.personDetectorAndTracking.startTracking();
             button2.setText("Stop tracking");
         } else {
-            imgProcess.personTracker.stopTracking();
+            imgProcess.personDetectorAndTracking.stopTracking();
             button2.setText("Start tracking");
         }
 

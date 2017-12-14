@@ -69,14 +69,32 @@ public final class Utils {
         return rect.get(0, 0)[2] * rect.get(0, 0)[3];
     }
 
+    public static double calculateArea(Rect rect) {
+        return rect.width * rect.height;
+    }
+
 
     public static boolean similarArea(MatOfRect rect1, MatOfRect rect2) {
-        double a1 = rect1.get(0, 0)[2] * rect1.get(0, 0)[3];
-        double a2 = rect2.get(0, 0)[2] * rect2.get(0, 0)[3];
-        if (a1 < a2 && a2 - a1 < a1)
+        double a1 = calculateArea(rect1);
+        double a2 = calculateArea(rect2);
+        if (a1 < a2 && a2 - a1 < a1) {
             return true;
-        if (a2 < a1 && a1 - a2 < a2)
+        }
+        if (a2 < a1 && a1 - a2 < a2) {
             return true;
+        }
+        return false;
+    }
+
+    public static boolean similarArea(Rect rect1, Rect rect2) {
+        double a1 = calculateArea(rect1);
+        double a2 = calculateArea(rect2);
+        if (a1 < a2 && a2 - a1 < a1) {
+            return true;
+        }
+        if (a2 < a1 && a1 - a2 < a2) {
+            return true;
+        }
         return false;
     }
 
@@ -92,6 +110,11 @@ public final class Utils {
         double h2 = rect2.get(0, 0)[3];
         return x1 < x2 + w2 && x1 + w1 > x2
                 && y1 < y2 + h2 && y1 + h1 > y2;
+    }
+
+    public static boolean overlaps(Rect rect1, Rect rect2) {
+        return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x
+                && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
     }
 
 
@@ -117,12 +140,24 @@ public final class Utils {
         return new Rect((int) r.x, (int) r.y, (int) r.width, (int) r.height);
     }
 
-    public static MatOfRect convertDoubleToMatOfRect(double[] bestRect) {
+    public static MatOfRect convertDoubleToMatOfRect(double[] doubles) {
         MatOfRect matOfRect = new MatOfRect();
-        matOfRect.fromArray(convertDoubleToRect(bestRect));
+        matOfRect.fromArray(convertDoubleToRect(doubles));
         return matOfRect;
     }
 
+    public static MatOfRect convertRectToMatOfRect(Rect rect) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(rect);
+        return matOfRect;
+    }
+
+
+    public static MatOfRect convertRect2dToMatOfRect(Rect2d rect2d) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(convertRect2dToRect(rect2d));
+        return matOfRect;
+    }
 
 
 }

@@ -1,8 +1,7 @@
 package imageprocess;
 
 import algorithms.Clustering;
-import algorithms.ColorBlobDetector;
-import algorithms.PersonTracker;
+import algorithms.PersonDetectorAndTracking;
 import algorithms.PostureDetector;
 import net.sf.javaml.clustering.OPTICS;
 import net.sf.javaml.core.Dataset;
@@ -27,7 +26,6 @@ import utils.KeyPointsAndFeaturesVector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import static org.opencv.video.Video.calcOpticalFlowFarneback;
 
@@ -49,7 +47,7 @@ public class ImageProcess_ObjectTracking {
     Tracker tracker;
     FeatureDetector blob;
     PostureDetector postureDetector;
-    public PersonTracker personTracker;
+    public PersonDetectorAndTracking personDetectorAndTracking;
 
     public ImageProcess_ObjectTracking(VideoCapture capture) {
         this.capture = capture;
@@ -80,7 +78,7 @@ public class ImageProcess_ObjectTracking {
 
         postureDetector = new PostureDetector();
 
-        personTracker = new PersonTracker();
+        personDetectorAndTracking = new PersonDetectorAndTracking();
     }
 
     private void createMyTracker() {
@@ -516,8 +514,8 @@ public class ImageProcess_ObjectTracking {
     }
 
     public Mat[] personDetector(Mat input) {
-        return personTracker.detect(input);
-//        return personTracker.detect2(input);
+        return personDetectorAndTracking.detect(input);
+//        return personDetectorAndTracking.detect2(input);
     }
 
 
