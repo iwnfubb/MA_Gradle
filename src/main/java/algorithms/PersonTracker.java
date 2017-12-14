@@ -22,16 +22,15 @@ public class PersonTracker {
     }
 
     public void createTracker(Mat input, Rect rect) {
-        this.tracker = TrackerKCF.create();
+        createTracker();
         setTrackingBox(rect);
         initTrackingbox(input);
         saveTrackingBoxToMemory();
     }
 
     public void createTracker(Mat input, double[] rect) {
-        this.tracker = TrackerKCF.create();
-        setTrackingBox(rect);
-        initTrackingbox(input);
+        createTracker();
+        createTracker(input, Utils.convertDoubleToRect(rect));
     }
 
     public void initTrackingbox(Mat input) {
