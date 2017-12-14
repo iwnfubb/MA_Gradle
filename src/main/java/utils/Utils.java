@@ -4,13 +4,13 @@ import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Rect2d;
+import org.opencv.core.*;
+import org.opencv.imgproc.Imgproc;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.util.ArrayList;
 
 public final class Utils {
     /**
@@ -159,5 +159,35 @@ public final class Utils {
         return matOfRect;
     }
 
+
+    public static Mat vstack(Mat mat1, Mat mat2) {
+        ArrayList<Mat> list = new ArrayList<>();
+        if (mat1.channels() == 1) {
+            Imgproc.cvtColor(mat1, mat1, Imgproc.COLOR_GRAY2BGR);
+        }
+        if (mat2.channels() == 1) {
+            Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
+        }
+        list.add(mat1);
+        list.add(mat2);
+        Mat result = new Mat();
+        Core.vconcat(list, result);
+        return result;
+    }
+
+    public static Mat hstack(Mat mat1, Mat mat2) {
+        ArrayList<Mat> list = new ArrayList<>();
+        if (mat1.channels() == 1) {
+            Imgproc.cvtColor(mat1, mat1, Imgproc.COLOR_GRAY2BGR);
+        }
+        if (mat2.channels() == 1) {
+            Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
+        }
+        list.add(mat1);
+        list.add(mat2);
+        Mat result = new Mat();
+        Core.hconcat(list, result);
+        return result;
+    }
 
 }
