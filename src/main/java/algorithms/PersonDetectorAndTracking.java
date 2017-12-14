@@ -126,14 +126,11 @@ public class PersonDetectorAndTracking {
 
             if (!startTracking && !isPersonThere) {
                 Rect r = Utils.convertDoubleToRect(bestRect);
-                MatOfRect bestRect = new MatOfRect();
-                bestRect.fromArray(r);
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
 
             drawRect(person, tracker.getTrackingBoxAsMatOfRect(), new Scalar(0, 255, 0));
-            tracker.saveTrackingBoxToMemory();
             boolean objectMoving = MovingDetector.isObjectMoving(tracker.getTrackingBoxAsRect(),
                     tracker.getLast_TrackingBoxAsRect());
             String moving = "";

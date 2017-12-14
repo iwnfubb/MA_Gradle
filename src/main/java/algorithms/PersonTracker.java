@@ -25,6 +25,7 @@ public class PersonTracker {
         this.tracker = TrackerKCF.create();
         setTrackingBox(rect);
         initTrackingbox(input);
+        saveTrackingBoxToMemory();
     }
 
     public void createTracker(Mat input, double[] rect) {
@@ -47,11 +48,11 @@ public class PersonTracker {
     }
 
     public void saveTrackingBoxToMemory() {
-        last_trackingBox = trackingBox;
+        last_trackingBox = new Rect2d(trackingBox.x, trackingBox.y, trackingBox.width, trackingBox.height);
     }
 
     public void restoreCurrentTrackingBoxFromLast() {
-        last_trackingBox = trackingBox;
+        trackingBox = new Rect2d(last_trackingBox.x, last_trackingBox.y, last_trackingBox.width, last_trackingBox.height);
     }
 
     public boolean isNormalChange() {
@@ -93,7 +94,6 @@ public class PersonTracker {
     }
 
     public boolean updateTrackingbox(Mat input) {
-        last_trackingBox = trackingBox;
         return tracker.update(input, trackingBox);
     }
 
