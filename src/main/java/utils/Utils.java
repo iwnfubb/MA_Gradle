@@ -117,6 +117,14 @@ public final class Utils {
                 && rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
     }
 
+    public static boolean isRect1InsideRect2(Rect rect1, Rect rect2) {
+        if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     public static double euclideandistance(Rect rect1, Rect rect2) {
         double centerX1 = rect1.x + rect1.width / 2;
@@ -157,6 +165,40 @@ public final class Utils {
         MatOfRect matOfRect = new MatOfRect();
         matOfRect.fromArray(convertRect2dToRect(rect2d));
         return matOfRect;
+    }
+
+    public static Mat rescaleImageToDisplay(Mat input, int defaultWidth, int defaultHeight) {
+        Size original_size = input.size();
+        double ratio = original_size.height / original_size.width;
+        double new_height = input.height();
+        double new_width = input.width();
+        Mat result = new Mat(new Size(defaultWidth, defaultHeight), input.type(), Scalar.all(126));
+
+        if (input.height() > input.width()) {
+            new_height = defaultHeight;
+            new_width = new_height / ratio;
+        }
+
+        if (input.width() > input.height()) {
+            new_width = defaultWidth;
+            new_height = new_width * ratio;
+        }
+
+        if (new_width < defaultHeight && new_width < defaultWidth)
+            Imgproc.resize(input, input, new Size(new_width, new_height));
+        else if (new_width > defaultWidth) {
+            new_width = defaultWidth;
+            new_height = new_width * ratio;
+            Imgproc.resize(input, input, new Size(new_width, new_height));
+
+        } else if (new_height > defaultHeight) {
+            new_height = defaultHeight;
+            new_width = new_height / ratio;
+            Imgproc.resize(input, input, new Size(new_width, new_height));
+        }
+
+        input.copyTo(result.colRange(0, input.width()).rowRange(0, input.height()));
+        return result;
     }
 
 

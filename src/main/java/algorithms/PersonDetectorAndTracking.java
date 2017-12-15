@@ -9,6 +9,7 @@ import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.Video;
 import utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -223,7 +224,12 @@ public class PersonDetectorAndTracking {
             Imgproc.putText(person, moving, new Point(30, 30),
                     0, 2, new Scalar(0, 0, 255), 3);
             tracker.saveTrackingBoxToMemory();
-            return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
+            return new Mat[]{person,
+                    person,
+                    connectedMat,
+                    Utils.rescaleImageToDisplay(segmentations[0],input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[1],input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[2],input.width(), input.height())};
         }
     }
 
@@ -350,20 +356,11 @@ public class PersonDetectorAndTracking {
     private int isBestRectDetected(Rect bestrect, MatOfRect rects) {
         List<Rect> rectslist = rects.toList();
         for (int i = 0; i < rectslist.size(); i++) {
-            if (isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area()) {
+            if (Utils.isRect1InsideRect2(bestrect, rectslist.get(i)) && bestrect.area() > 0.5 * rectslist.get(i).area()) {
                 return i;
             }
         }
         return -1;
-    }
-
-
-    private boolean isRect1InsideRect2(Rect rect1, Rect rect2) {
-        if (rect1.x > rect2.x && rect1.y > rect2.y && rect1.x + rect1.width < rect2.x + rect2.width && rect1.y + rect1.height < rect2.y + rect2.height) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
 
