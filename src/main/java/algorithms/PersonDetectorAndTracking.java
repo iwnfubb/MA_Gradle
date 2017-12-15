@@ -62,7 +62,11 @@ public class PersonDetectorAndTracking {
         return startTracking;
     }
 
+
     public Mat[] detect(Mat input) {
+        /**second try with person tracking
+         * problem: work only indoor without background change
+         * */
         backgroundDensity = 0;
         Mat person = new Mat();
         input.copyTo(person);
@@ -145,7 +149,85 @@ public class PersonDetectorAndTracking {
         }
     }
 
+    public Mat[] detect3(Mat input) {
+        /**third try with person tracking
+         * try to remove HOG , it is not needed
+         * track based on moving object
+         * compare moving box with tracking box
+         * if moving box is problely a person -> create new track
+         *
+         */
+        /**third try with person tracking
+         * create a list of tracker (tracking motion and tracking person)
+         * after 10 frames if object it not moving then remove them from list
+         * if object at least 1 frame moving then track always (or add more chances ???)
+         *
+         *
+         */
+        backgroundDensity = 0;
+        Mat person = new Mat();
+        input.copyTo(person);
+        MatOfRect foundLocations = new MatOfRect();
+        MatOfDouble foundWeights = new MatOfDouble();
+
+        if (!startTracking) {
+            Mat connectedMat = getMostSalientForegroundObject(input);
+            Mat imageWithBestRect = new Mat();
+
+            hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
+                    finalThreshold, useMeanshiftGrouping);
+            foundLocations = filterPersonArea(foundLocations, foundWeights);
+            drawRect(person, foundLocations, new Scalar(0, 0, 255));
+
+            input.copyTo(imageWithBestRect);
+            drawImageWithRect(imageWithBestRect, bestRect);
+            drawImageWithRect(person, bestRect);
+            Rect r = Utils.convertDoubleToRect(bestRect);
+            log("Background backgroundDensity: " + backgroundDensity);
+
+            if (isBestRectDetected(r, foundLocations) != -1 && backgroundDensity > 0.8) {
+                tracker.createTracker(input, r);
+                startTracking = true;
+            }
+            return new Mat[]{person, imageWithBestRect, connectedMat};
+        } else {
+            Mat connectedMat = getMostSalientForegroundObject(input);
+            startTracking = tracker.updateTrackingbox(person);
+
+            Mat[] segmentations = new Mat[3];
+            if (startTracking) {
+                Mat imageROI = new Mat(person, tracker.getTrackingBoxAsRect());
+                Mat connectedMatROI = new Mat(connectedMat, tracker.getTrackingBoxAsRect());
+                segmentations = imageSegmentaion3(imageROI, connectedMatROI);
+            }
+
+            if (!startTracking ||
+                    !Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect))) {
+                Rect r = Utils.convertDoubleToRect(bestRect);
+                tracker.createTracker(input, r);
+                startTracking = true;
+            }
+
+            drawRect(person, tracker.getTrackingBoxAsMatOfRect(), new Scalar(0, 255, 0));
+            drawRect(person, Utils.convertDoubleToMatOfRect(bestRect), new Scalar(255, 0, 0));
+            boolean objectMoving = MovingDetector.isObjectMoving(tracker.getTrackingBoxAsRect(),
+                    tracker.getLast_TrackingBoxAsRect());
+            String moving = "";
+            if (objectMoving) {
+                moving = "Moving";
+            }
+
+            Imgproc.putText(person, moving, new Point(30, 30),
+                    0, 2, new Scalar(0, 0, 255), 3);
+            tracker.saveTrackingBoxToMemory();
+            return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
+        }
+    }
+
     public Mat[] detect2(Mat input) {
+        /* first try with detection
+            problem : tracking is not correct , doesnt follow moving person if a similar object occurs
+        */
         Mat person = new Mat();
         input.copyTo(person);
         if (!startTracking) {
