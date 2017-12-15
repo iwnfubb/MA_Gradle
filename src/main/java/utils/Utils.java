@@ -89,10 +89,10 @@ public final class Utils {
     public static boolean similarArea(Rect rect1, Rect rect2) {
         double a1 = calculateArea(rect1);
         double a2 = calculateArea(rect2);
-        if (a1 < a2 && a2 - a1 < a1) {
+        if (a1 < a2 && a2 - a1 < a1 * 2) {
             return true;
         }
-        if (a2 < a1 && a1 - a2 < a2) {
+        if (a2 < a1 && a1 - a2 < a2 * 2) {
             return true;
         }
         return false;
@@ -168,6 +168,19 @@ public final class Utils {
         if (mat2.channels() == 1) {
             Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
         }
+        ArrayList<Mat> temp = new ArrayList<>();
+        if (mat1.width() < mat2.width()) {
+            Mat patch = new Mat(new Size(mat2.width() - mat1.width(), mat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(mat1);
+            temp.add(patch);
+            Core.hconcat(temp, mat1);
+        }
+        if (mat1.width() > mat2.width()) {
+            Mat patch = new Mat(new Size(mat1.width() - mat2.width(), mat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(mat2);
+            temp.add(patch);
+            Core.hconcat(temp, mat2);
+        }
         list.add(mat1);
         list.add(mat2);
         Mat result = new Mat();
@@ -182,6 +195,19 @@ public final class Utils {
         }
         if (mat2.channels() == 1) {
             Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
+        }
+        ArrayList<Mat> temp = new ArrayList<>();
+        if (mat1.height() < mat2.height()) {
+            Mat patch = new Mat(new Size(mat1.width(), mat2.height() - mat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(mat1);
+            temp.add(patch);
+            Core.vconcat(temp, mat1);
+        }
+        if (mat1.height() > mat2.height()) {
+            Mat patch = new Mat(new Size(mat2.width(), mat1.height() - mat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(mat2);
+            temp.add(patch);
+            Core.vconcat(temp, mat2);
         }
         list.add(mat1);
         list.add(mat2);
