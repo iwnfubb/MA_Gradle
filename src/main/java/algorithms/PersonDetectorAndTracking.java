@@ -204,6 +204,9 @@ public class PersonDetectorAndTracking {
             if (!startTracking ||
                     !Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect))) {
                 Rect r = Utils.convertDoubleToRect(bestRect);
+                Mat imageROI = new Mat(person, r);
+                Mat connectedMatROI = new Mat(connectedMat, r);
+                segmentations = imageSegmentaion3(imageROI, connectedMatROI);
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
