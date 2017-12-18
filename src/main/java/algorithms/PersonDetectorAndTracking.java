@@ -6,7 +6,9 @@ import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.HOGDescriptor;
 import org.opencv.video.BackgroundSubtractorKNN;
+import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
+import org.opencv.videoio.Videoio;
 import utils.Utils;
 
 import javax.rmi.CORBA.Util;
@@ -18,6 +20,7 @@ public class PersonDetectorAndTracking {
     boolean startTracking = false;
     HOGDescriptor hog;
     BackgroundSubtractorKNN bgknn;
+    //BackgroundSubtractorMOG2 bgmog2;
     double[] bestRect = new double[5];
     double backgroundDensity = 0;
     PersonTracker tracker;
@@ -41,8 +44,10 @@ public class PersonDetectorAndTracking {
         hog.setSVMDetector(peopleDetector);
 
         this.bgknn = Video.createBackgroundSubtractorKNN();
-        bgknn.setHistory(10);
+        bgknn.setHistory(200);
 
+        //this.bgmog2 = Video.createBackgroundSubtractorMOG2();
+        //bgmog2.setHistory(500);
         blob = FeatureDetector.create(FeatureDetector.SIMPLEBLOB);
         blob.read("blob.xml");
 
@@ -202,8 +207,10 @@ public class PersonDetectorAndTracking {
                 segmentations = imageSegmentaion3(imageROI, connectedMatROI);
             }
 
+            //if tracking lost or person reappear in frame
             if (!startTracking ||
-                    !Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect))) {
+                    (!Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect)) &&
+                    Utils.similarArea(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect)))) {
                 Rect r = Utils.convertDoubleToRect(bestRect);
                 Mat imageROI = new Mat(person, r);
                 Mat connectedMatROI = new Mat(connectedMat, r);
