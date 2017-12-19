@@ -53,7 +53,7 @@ public class NewGUIController_ObjectTracking {
     private boolean liveVideo = false;
     public static int frameCounter = 0;
     private String fileName = "v_fallen.mp4";
-    private String outputName = "o_" + fileName;
+    private String outputName = "vo_" + fileName;
     private int output_width = 1280;
     private int output_height = 720;
     private VideoWriter writer = new VideoWriter(outputName, VideoWriter.fourcc('D', 'I', 'V', 'X'), 1, new Size(output_width, output_height), true);
