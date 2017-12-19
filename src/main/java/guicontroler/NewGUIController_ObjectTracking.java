@@ -12,11 +12,15 @@ import javafx.scene.image.ImageView;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.features2d.Features2d;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
 import utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +52,12 @@ public class NewGUIController_ObjectTracking {
     private boolean trigger = false;
     private boolean liveVideo = false;
     public static int frameCounter = 0;
+    private String fileName = "v_fallen.mp4";
+    private String outputName = "o_" + fileName;
+    private int output_width = 1280;
+    private int output_height = 720;
+    private VideoWriter writer = new VideoWriter(outputName, VideoWriter.fourcc('D', 'I', 'V', 'X'), 1, new Size(output_width, output_height), true);
+
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -63,7 +73,7 @@ public class NewGUIController_ObjectTracking {
             if (liveVideo) {
                 this.capture.open(cameraId);
             } else {
-                this.capture.open("v_dead.mp4");
+                this.capture.open(fileName);
             }
             ini();
             // is the video stream available?
@@ -99,6 +109,8 @@ public class NewGUIController_ObjectTracking {
                     }
                     Image image = Utils.mat2Image(firstRow);
                     updateImageView(imageView, image);
+                    Mat output = Utils.rescaleImageToDisplay(firstRow, output_width, output_height);
+                    writer.write(output);
                 };
 
                 this.timer = Executors.newSingleThreadScheduledExecutor();
@@ -149,6 +161,7 @@ public class NewGUIController_ObjectTracking {
         if (this.capture.isOpened()) {
             // release the camera
             this.capture.release();
+            writer.release();
         }
     }
 

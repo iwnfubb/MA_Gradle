@@ -176,24 +176,26 @@ public final class Utils {
 
         if (input.height() > input.width()) {
             new_height = defaultHeight;
-            new_width = new_height / ratio;
+            new_width = (int) (new_height / ratio);
         }
 
         if (input.width() > input.height()) {
             new_width = defaultWidth;
-            new_height = new_width * ratio;
+            new_height = (int) (new_width * ratio);
         }
 
         if (new_width < defaultHeight && new_width < defaultWidth)
             Imgproc.resize(input, input, new Size(new_width, new_height));
         else if (new_width > defaultWidth) {
             new_width = defaultWidth;
-            new_height = new_width * ratio;
+            new_height = (int) (new_width * ratio);
             Imgproc.resize(input, input, new Size(new_width, new_height));
 
         } else if (new_height > defaultHeight) {
             new_height = defaultHeight;
-            new_width = new_height / ratio;
+            new_width = (int) (new_height / ratio);
+            Imgproc.resize(input, input, new Size(new_width, new_height));
+        }else{
             Imgproc.resize(input, input, new Size(new_width, new_height));
         }
 
