@@ -21,6 +21,8 @@ import org.opencv.videoio.Videoio;
 import utils.Utils;
 
 import javax.rmi.CORBA.Util;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,12 +54,12 @@ public class NewGUIController_ObjectTracking {
     private boolean trigger = false;
     private boolean liveVideo = false;
     public static int frameCounter = 0;
-    private String fileName = "v_fallen.mp4";
-    private String outputName = "vo_" + fileName;
+    private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+    private String fileName = "v_fallen2.mp4";
+    private String outputName = "vo_" + timestamp.getTime() + fileName;
     private int output_width = 1280;
     private int output_height = 720;
     private VideoWriter writer = new VideoWriter(outputName, VideoWriter.fourcc('D', 'I', 'V', 'X'), 1, new Size(output_width, output_height), true);
-
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -66,6 +68,7 @@ public class NewGUIController_ObjectTracking {
      */
     @FXML
     protected void startCamera(ActionEvent event) {
+
         frameCounter = 0;
         if (!this.cameraActive) {
 
