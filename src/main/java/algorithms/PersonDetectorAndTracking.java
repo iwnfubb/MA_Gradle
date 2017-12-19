@@ -21,11 +21,10 @@ public class PersonDetectorAndTracking {
     HOGDescriptor hog;
     BackgroundSubtractorKNN bgknn;
     //BackgroundSubtractorMOG2 bgmog2;
-    double[] bestRect = new double[5];
-    double backgroundDensity = 0;
     PersonTracker tracker;
     FeatureDetector blob;
     PostureDetector postureDetector;
+    MovingDetector movingDetector;
     boolean tracking = false;
     Rect last_rect = new Rect();
 
@@ -54,6 +53,7 @@ public class PersonDetectorAndTracking {
         tracker = new PersonTracker();
 
         postureDetector = new PostureDetector();
+        this.movingDetector = new MovingDetector();
     }
 
     public void startTracking() {
@@ -73,14 +73,14 @@ public class PersonDetectorAndTracking {
         /**second try with person tracking
          * problem: work only indoor without background change
          * */
-        backgroundDensity = 0;
         Mat person = new Mat();
         input.copyTo(person);
         MatOfRect foundLocations = new MatOfRect();
         MatOfDouble foundWeights = new MatOfDouble();
 
         if (!startTracking) {
-            Mat connectedMat = getMostSalientForegroundObject(input);
+            movingDetector.calculateMostSalientForegroundObject(input);
+            Mat connectedMat = movingDetector.fgmaskClosed;
             Mat imageWithBestRect = new Mat();
 
             hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
@@ -89,18 +89,19 @@ public class PersonDetectorAndTracking {
             drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
             input.copyTo(imageWithBestRect);
-            drawImageWithRect(imageWithBestRect, bestRect);
-            drawImageWithRect(person, bestRect);
-            Rect r = Utils.convertDoubleToRect(bestRect);
-            log("Background backgroundDensity: " + backgroundDensity);
+            drawImageWithRect(imageWithBestRect, movingDetector.bestRect);
+            drawImageWithRect(person, movingDetector.bestRect);
+            Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
+            log("Background backgroundDensity: " + movingDetector.backgroundDensity);
 
-            if (isBestRectDetected(r, foundLocations) != -1 && backgroundDensity > 0.8) {
+            if (isBestRectDetected(r, foundLocations) != -1 && movingDetector.backgroundDensity > 0.8) {
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
             return new Mat[]{person, imageWithBestRect, connectedMat};
         } else {
-            Mat connectedMat = getMostSalientForegroundObject(input);
+            movingDetector.calculateMostSalientForegroundObject(input);
+            Mat connectedMat = movingDetector.fgmaskClosed;
             startTracking = tracker.updateTrackingbox(person);
 
             Mat[] segmentations = new Mat[3];
@@ -135,7 +136,7 @@ public class PersonDetectorAndTracking {
             }
 
             if (!startTracking && !isPersonThere) {
-                Rect r = Utils.convertDoubleToRect(bestRect);
+                Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
@@ -170,14 +171,14 @@ public class PersonDetectorAndTracking {
          *
          *
          */
-        backgroundDensity = 0;
         Mat person = new Mat();
         input.copyTo(person);
         MatOfRect foundLocations = new MatOfRect();
         MatOfDouble foundWeights = new MatOfDouble();
 
         if (!startTracking) {
-            Mat connectedMat = getMostSalientForegroundObject(input);
+            movingDetector.calculateMostSalientForegroundObject(input);
+            Mat connectedMat = movingDetector.fgmaskClosed;
             Mat imageWithBestRect = new Mat();
 
             hog.detectMultiScale(person, foundLocations, foundWeights, hitThreshold, winStride, padding, scale,
@@ -186,18 +187,19 @@ public class PersonDetectorAndTracking {
             drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
             input.copyTo(imageWithBestRect);
-            drawImageWithRect(imageWithBestRect, bestRect);
-            drawImageWithRect(person, bestRect);
-            Rect r = Utils.convertDoubleToRect(bestRect);
-            log("Background backgroundDensity: " + backgroundDensity);
+            drawImageWithRect(imageWithBestRect, movingDetector.bestRect);
+            drawImageWithRect(person, movingDetector.bestRect);
+            Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
+            log("Background backgroundDensity: " + movingDetector.backgroundDensity);
 
-            if (isBestRectDetected(r, foundLocations) != -1 && backgroundDensity > 0.8) {
+            if (isBestRectDetected(r, foundLocations) != -1 && movingDetector.backgroundDensity > 0.8) {
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
             return new Mat[]{person, imageWithBestRect, connectedMat};
         } else {
-            Mat connectedMat = getMostSalientForegroundObject(input);
+            movingDetector.calculateMostSalientForegroundObject(input);
+            Mat connectedMat = movingDetector.fgmaskClosed;
             startTracking = tracker.updateTrackingbox(person);
 
             Mat[] segmentations = new Mat[3];
@@ -209,9 +211,9 @@ public class PersonDetectorAndTracking {
 
             //if tracking lost or person reappear in frame
             if (!startTracking ||
-                    (!Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect)) &&
-                    Utils.similarArea(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(bestRect)))) {
-                Rect r = Utils.convertDoubleToRect(bestRect);
+                    (!Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(movingDetector.bestRect)) &&
+                            Utils.similarArea(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(movingDetector.bestRect)))) {
+                Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
                 Mat imageROI = new Mat(person, r);
                 Mat connectedMatROI = new Mat(connectedMat, r);
                 segmentations = imageSegmentaion3(imageROI, connectedMatROI);
@@ -220,7 +222,7 @@ public class PersonDetectorAndTracking {
             }
 
             drawRect(person, tracker.getTrackingBoxAsMatOfRect(), new Scalar(0, 255, 0));
-            drawRect(person, Utils.convertDoubleToMatOfRect(bestRect), new Scalar(255, 0, 0));
+            drawRect(person, Utils.convertDoubleToMatOfRect(movingDetector.bestRect), new Scalar(255, 0, 0));
             boolean objectMoving = MovingDetector.isObjectMoving(tracker.getTrackingBoxAsRect(),
                     tracker.getLast_TrackingBoxAsRect());
             String moving = "";
@@ -234,9 +236,9 @@ public class PersonDetectorAndTracking {
             return new Mat[]{person,
                     person,
                     connectedMat,
-                    Utils.rescaleImageToDisplay(segmentations[0],input.width(), input.height()),
-                    Utils.rescaleImageToDisplay(segmentations[1],input.width(), input.height()),
-                    Utils.rescaleImageToDisplay(segmentations[2],input.width(), input.height())};
+                    Utils.rescaleImageToDisplay(segmentations[0], input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[1], input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[2], input.width(), input.height())};
         }
     }
 
@@ -248,18 +250,18 @@ public class PersonDetectorAndTracking {
         input.copyTo(person);
         if (!startTracking) {
             tracking = false;
-            backgroundDensity = 0;
 
             Mat imageWithBestRect = new Mat();
             input.copyTo(imageWithBestRect);
-            Mat connectedMat = getMostSalientForegroundObject(input);
+            movingDetector.calculateMostSalientForegroundObject(input);
+            Mat connectedMat = movingDetector.fgmaskClosed;
             Mat[] segmentations;
-            Rect r = new Rect(bestRect);
+            Rect r = new Rect(movingDetector.bestRect);
             MatOfRect bestRect = new MatOfRect();
             bestRect.fromArray(r);
             drawRect(imageWithBestRect, bestRect, new Scalar(255, 0, 0));
 
-            if (backgroundDensity > 0.8) {
+            if (movingDetector.backgroundDensity > 0.8) {
                 Mat imageROI = new Mat(input, r);
                 Mat connectedMatROI = new Mat(connectedMat, r);
                 segmentations = imageSegmentaion3(imageROI, connectedMatROI);
@@ -271,8 +273,9 @@ public class PersonDetectorAndTracking {
             if (!tracking) {
                 Mat imageWithBestRect = new Mat();
                 input.copyTo(imageWithBestRect);
-                Mat connectedMat = getMostSalientForegroundObject(input);
-                Rect r = new Rect(bestRect);
+                movingDetector.calculateMostSalientForegroundObject(input);
+                Mat connectedMat = movingDetector.fgmaskClosed;
+                Rect r = new Rect(movingDetector.bestRect);
                 tracker.createTracker(input, r);
                 tracking = true;
             } else {
@@ -313,50 +316,6 @@ public class PersonDetectorAndTracking {
         for (Rect r : rects) {
             Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
         }
-    }
-
-    private Mat getMostSalientForegroundObject(Mat input) {
-        Mat mask = new Mat();
-        bgknn.apply(input, mask, 0.1);
-
-        Mat fgmaskClosed = new Mat();
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
-        Imgproc.morphologyEx(mask, fgmaskClosed, Imgproc.MORPH_CLOSE, kernel);
-
-        Mat labels = new Mat();
-        Mat stats = new Mat();
-        Mat centroids = new Mat();
-        int connectivity = 8;
-        Imgproc.connectedComponentsWithStats(fgmaskClosed, labels, stats, centroids,
-                connectivity, CvType.CV_32S);
-
-
-        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        Imgproc.erode(fgmaskClosed, fgmaskClosed, kernelErode);
-        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
-        Imgproc.dilate(fgmaskClosed, fgmaskClosed, kernelDalate);
-
-        double sum = 0;
-        for (int i = 0; i < stats.rows(); i++) {
-            sum += stats.get(i, 4)[0];
-        }
-        backgroundDensity = stats.get(0, 4)[0] / sum;
-        bestRect = new double[5];
-        if (stats.rows() < 2) {
-            bestRect = new double[]{-1, -1, -1, -1, -1};
-        } else {
-            int mostSalientIndex = 1;
-            double max = 0;
-            for (int i = 1; i < stats.rows(); i++) {
-                if (stats.get(i, 4)[0] > max) {
-                    max = stats.get(i, 4)[0];
-                    mostSalientIndex = i;
-                }
-            }
-            for (int i = 0; i < bestRect.length; i++)
-                bestRect[i] = stats.get(mostSalientIndex, i)[0];
-        }
-        return fgmaskClosed;
     }
 
 
