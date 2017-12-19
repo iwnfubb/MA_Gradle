@@ -209,9 +209,9 @@ public class PersonDetectorAndTracking {
                 segmentations = imageSegmentaion3(imageROI, connectedMatROI);
             }
 
-            //if tracking lost or person reappear in frame
+            //if tracking lost or person reappear in frame0
             if (!startTracking ||
-                    (!Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(movingDetector.bestRect)) &&
+                    (Utils.overlaps(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(movingDetector.bestRect)) &&
                             Utils.similarArea(tracker.getTrackingBoxAsRect(), Utils.convertDoubleToRect(movingDetector.bestRect)))) {
                 Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
                 Mat imageROI = new Mat(person, r);

@@ -89,10 +89,10 @@ public final class Utils {
     public static boolean similarArea(Rect rect1, Rect rect2) {
         double a1 = calculateArea(rect1);
         double a2 = calculateArea(rect2);
-        if (a1 < a2 && a2 - a1 < a1 * 2) {
+        if (a1 < a2 && a2 - a1 < a1 / 5) {
             return true;
         }
-        if (a2 < a1 && a1 - a2 < a2 * 2) {
+        if (a2 < a1 && a1 - a2 < a2 / 5) {
             return true;
         }
         return false;
@@ -195,7 +195,7 @@ public final class Utils {
             new_height = defaultHeight;
             new_width = (int) (new_height / ratio);
             Imgproc.resize(input, input, new Size(new_width, new_height));
-        }else{
+        } else {
             Imgproc.resize(input, input, new Size(new_width, new_height));
         }
 
