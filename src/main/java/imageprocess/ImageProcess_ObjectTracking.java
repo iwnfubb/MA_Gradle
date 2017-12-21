@@ -514,7 +514,7 @@ public class ImageProcess_ObjectTracking {
     }
 
     public Mat[] personDetector(Mat input) {
-        return personDetectorAndTracking.detect3(input);
+        return personDetectorAndTracking.detect2(input);
     }
 
 

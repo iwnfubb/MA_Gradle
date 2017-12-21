@@ -55,7 +55,7 @@ public class NewGUIController_ObjectTracking {
     private boolean liveVideo = false;
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-    private String fileName = "v_fallen2.mp4";
+    private String fileName = "v_dead2.mp4";
     private String outputName = "vo_" + timestamp.getTime() + fileName;
     private int output_width = 1280;
     private int output_height = 720;
@@ -101,12 +101,12 @@ public class NewGUIController_ObjectTracking {
                     Mat firstRow = Utils.hstack(originalFrame, gaussianBlurFrame);
 
                     if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
-                        Mat[] grabcutFrameAndMatches = imgProcess.personDetector(originalFrame);
-                        Mat secondRow = Utils.hstack(Utils.hstack(grabcutFrameAndMatches[0], grabcutFrameAndMatches[1]), grabcutFrameAndMatches[2]);
+                        Mat[] detection = imgProcess.personDetector(originalFrame);
+                        Mat secondRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
                         firstRow = Utils.vstack(firstRow, secondRow);
 
-                        if (grabcutFrameAndMatches.length == 6) {
-                            Mat thirdRow = Utils.hstack(Utils.hstack(grabcutFrameAndMatches[3], grabcutFrameAndMatches[4]), grabcutFrameAndMatches[5]);
+                        if (detection.length == 6) {
+                            Mat thirdRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
                             firstRow = Utils.vstack(firstRow, thirdRow);
                         }
                     }

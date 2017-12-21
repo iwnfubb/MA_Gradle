@@ -69,7 +69,7 @@ public class PersonDetectorAndTracking {
     }
 
 
-    public Mat[] detect(Mat input) {
+    public Mat[] detect2(Mat input) {
         /**second try with person tracking
          * problem: work only indoor without background change
          * */
@@ -152,7 +152,10 @@ public class PersonDetectorAndTracking {
             Imgproc.putText(person, moving, new Point(30, 30),
                     0, 2, new Scalar(0, 0, 255), 3);
             tracker.saveTrackingBoxToMemory();
-            return new Mat[]{person, person, connectedMat, segmentations[0], segmentations[1], segmentations[2]};
+            return new Mat[]{person, person, connectedMat,
+                    Utils.rescaleImageToDisplay(segmentations[0], input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[1], input.width(), input.height()),
+                    Utils.rescaleImageToDisplay(segmentations[2], input.width(), input.height())};
         }
     }
 
@@ -242,7 +245,7 @@ public class PersonDetectorAndTracking {
         }
     }
 
-    public Mat[] detect2(Mat input) {
+    public Mat[] detect(Mat input) {
         /* first try with detection
             problem : tracking is not correct , doesnt follow moving person if a similar object occurs
         */
