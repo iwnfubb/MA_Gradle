@@ -95,6 +95,7 @@ public class PersonDetectorAndTracking {
             log("Background backgroundDensity: " + movingDetector.backgroundDensity);
 
             if (isBestRectDetected(r, foundLocations) != -1 && movingDetector.backgroundDensity > 0.8) {
+                Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2HSV);
                 tracker.createTracker(input, r);
                 startTracking = true;
             }
@@ -102,6 +103,7 @@ public class PersonDetectorAndTracking {
         } else {
             movingDetector.calculateMostSalientForegroundObject(input);
             Mat connectedMat = movingDetector.fgmaskClosed;
+            Imgproc.cvtColor(person, person, Imgproc.COLOR_RGB2HSV);
             startTracking = tracker.updateTrackingbox(person);
 
             Mat[] segmentations = new Mat[3];
