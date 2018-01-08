@@ -72,7 +72,7 @@ public class GUIController_MotionDetection {
         if (!this.cameraActive) {
             // start the video capture
             //this.capture.open(cameraId);
-            this.capture.open("v_walk.mp4");
+            this.capture.open("v_dead2.mp4");
 
             // is the video stream available?
             if (this.capture.isOpened()) {
@@ -117,7 +117,7 @@ public class GUIController_MotionDetection {
                     }
 
                     if (vibeActive.isSelected()) {
-                        Mat vibeFrame = imgProcess.getVibeModel();
+                        Mat vibeFrame = imgProcess.getDiffDetector();
                         if (!vibeFrame.empty()) {
                             Image mmgImageToShow = Utils.mat2Image(vibeFrame);
                             updateImageView(vibeView, mmgImageToShow);

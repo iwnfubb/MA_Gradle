@@ -1,9 +1,10 @@
 package imageprocess;
 
+import algorithms.BinaryMaskAnalyser;
+import algorithms.DiffMotionDetector;
 import algorithms.KernelDensityEstimator;
 import algorithms.Vibe;
-import org.opencv.core.Mat;
-import org.opencv.core.Size;
+import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
@@ -18,6 +19,7 @@ public class ImageProcess_MotionDetection {
     private Size gaussianFilterSize = (new Size(3, 3));
     KernelDensityEstimator kde;
     Vibe vibe;
+    DiffMotionDetector diffMotionDetector;
 
     public ImageProcess_MotionDetection(VideoCapture capture) {
         this.capture = capture;
@@ -28,6 +30,7 @@ public class ImageProcess_MotionDetection {
         kde = new KernelDensityEstimator();
         kde.setN(10);
         vibe = new Vibe();
+        diffMotionDetector = new DiffMotionDetector();
     }
 
     public Mat getOriginalFrame() {
@@ -85,6 +88,31 @@ public class ImageProcess_MotionDetection {
             Imgproc.resize(currentFrame, blurFrame, new Size(currentFrame.width() / 2, currentFrame.height() / 2));
             Imgproc.GaussianBlur(blurFrame, blurFrame, gaussianFilterSize, 0);
             frame = vibe.foregroundMask(blurFrame);
+        }
+        return frame;
+    }
+
+    boolean isBackgroundSet = false;
+
+    public Mat getDiffDetector() {
+        Mat frame = new Mat();
+        if (!currentFrame.empty()) {
+            currentFrame.copyTo(frame);
+            if (!isBackgroundSet) {
+                diffMotionDetector.setBackground(frame);
+                isBackgroundSet = true;
+            }
+            Mat frame_mask = diffMotionDetector.returnMask(frame);
+
+            Rect rect;
+            if (BinaryMaskAnalyser.returnNumberOfContours(frame_mask) > 0) {
+                rect = BinaryMaskAnalyser.returnMaxAreaRectangle(frame_mask);
+                if (rect != null) {
+                    Imgproc.rectangle(frame, new Point(rect.x, rect.y),
+                            new Point(rect.x + rect.width, rect.y + rect.height),
+                            new Scalar(0, 255, 0), 2);
+                }
+            }
         }
         return frame;
     }
