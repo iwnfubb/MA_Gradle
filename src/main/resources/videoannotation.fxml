@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="765.0" prefWidth="1528.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="guicontroler.GUIController_VideoAnnotation">
+    <top>
+        <GridPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" opacity="0.98" prefHeight="589.0" prefWidth="1535.0" BorderPane.alignment="CENTER">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="1496.0" minWidth="10.0" prefWidth="1307.0" />
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="777.0" minWidth="0.0" prefWidth="229.0" />
+            </columnConstraints>
+            <rowConstraints>
+            <RowConstraints />
+            </rowConstraints>
+            <children>
+                <ImageView fx:id="imageView" fitHeight="720.0" fitWidth="1280.0" pickOnBounds="true" preserveRatio="true" />
+            <GridPane prefHeight="879.0" GridPane.columnIndex="1">
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="10.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <SplitPane dividerPositions="0.5460526315789473" prefHeight="160.0" prefWidth="200.0">
+                    <items>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="50.0" prefWidth="80.0">
+                           <children>
+                              <Label prefHeight="40.0" prefWidth="83.0" text="Frame number:" />
+                           </children>
+                        </AnchorPane>
+                      <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="44.0" prefWidth="124.0">
+                           <children>
+                              <Label fx:id="frame_number" layoutX="14.0" layoutY="13.0" text="0" />
+                           </children>
+                        </AnchorPane>
+                    </items>
+                  </SplitPane>
+                  <SplitPane dividerPositions="0.2236842105263158" prefHeight="160.0" prefWidth="200.0" GridPane.rowIndex="1">
+                     <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="44.0" prefWidth="203.0">
+                           <children>
+                              <Label prefHeight="40.0" prefWidth="83.0" text="BBox:" />
+                           </children>
+                        </AnchorPane>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="42.0" prefWidth="131.0">
+                           <children>
+                              <Label fx:id="bb_values" layoutX="14.0" layoutY="13.0" text="0, 0, 0, 0" />
+                           </children>
+                        </AnchorPane>
+                     </items>
+                  </SplitPane>
+                  <Label prefHeight="17.0" prefWidth="104.0" text="POSTURE" GridPane.rowIndex="3" />
+                  <RadioButton fx:id="bending" mnemonicParsing="false" text="Bending" GridPane.rowIndex="5" />
+                  <RadioButton fx:id="standing" mnemonicParsing="false" text="Standing" GridPane.rowIndex="4" />
+                  <RadioButton fx:id="sitting" mnemonicParsing="false" text="Sitting" GridPane.rowIndex="6" />
+                  <RadioButton fx:id="laying" mnemonicParsing="false" text="Laying" GridPane.rowIndex="7" />
+                  <CheckBox fx:id="person_there" mnemonicParsing="false" text="Person exists" GridPane.rowIndex="2" />
+                  <Label prefHeight="17.0" prefWidth="138.0" text="MOVING" GridPane.rowIndex="8" />
+                  <RadioButton fx:id="moving" mnemonicParsing="false" text="Yes" GridPane.rowIndex="9" />
+                  <RadioButton fx:id="not_moving" mnemonicParsing="false" text="No" GridPane.rowIndex="10" />
+                  <Label prefHeight="17.0" prefWidth="91.0" text="STATUS" GridPane.rowIndex="11" />
+                  <RadioButton fx:id="ok" mnemonicParsing="false" text="Ok" GridPane.rowIndex="12" />
+                  <RadioButton fx:id="not_ok" mnemonicParsing="false" text="Not Ok" GridPane.rowIndex="13" />
+               </children>
+            </GridPane>
+            </children>
+        </GridPane>
+    </top>
+    <bottom>
+        <BorderPane prefHeight="36.0" prefWidth="800.0" BorderPane.alignment="CENTER">
+         <left>
+            <Label prefHeight="17.0" prefWidth="908.0" text="1. Open Video 2. Mark BB 3. Check properties 4. Press &quot;Space&quot; to next Frame" BorderPane.alignment="CENTER" />
+         </left>
+         <center>
+            <Button fx:id="openButton" mnemonicParsing="false" onAction="#openVideo" prefHeight="25.0" prefWidth="141.0" text="Open ..." BorderPane.alignment="CENTER" />
+         </center>
+         <right>
+            <Button fx:id="openButton1" mnemonicParsing="false" onAction="#nextFrame" prefHeight="25.0" prefWidth="141.0" text="Next Frame" BorderPane.alignment="CENTER" />
+         </right>
+        </BorderPane>
+    </bottom>
+</BorderPane>
