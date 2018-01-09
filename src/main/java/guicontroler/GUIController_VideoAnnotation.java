@@ -184,6 +184,7 @@ public class GUIController_VideoAnnotation {
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (NullPointerException ex) {
         }
         if (this.timer != null && !this.timer.isShutdown()) {
             try {
