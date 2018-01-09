@@ -268,4 +268,19 @@ public final class Utils {
         return result;
     }
 
+    public static Mat convertImageByInvariantFeatures(Mat input) {
+        Mat result = new Mat();
+        input.copyTo(result);
+        for (int y = 0; y < result.rows(); y++)
+            for (int x = 0; x < result.cols(); x++) {
+                //BGR
+                double[] pixel = result.get(y, x);
+                double c1 = Math.atan(pixel[0] / Math.max(pixel[1], pixel[2])) * 255;
+                double c2 = Math.atan(pixel[1] / Math.max(pixel[0], pixel[2])) * 255;
+                double c3 = Math.atan(pixel[2] / Math.max(pixel[0], pixel[1])) * 255;
+                result.put(y, x, c1, c2, c3);
+            }
+        return result;
+    }
+
 }
