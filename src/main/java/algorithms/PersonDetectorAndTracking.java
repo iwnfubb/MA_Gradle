@@ -1,5 +1,6 @@
 package algorithms;
 
+import imageprocess.ImageProcess_MotionDetection;
 import org.opencv.core.*;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
@@ -35,6 +36,7 @@ public class PersonDetectorAndTracking {
     double scale = 1.05;
     boolean useMeanshiftGrouping = true;
     double finalThreshold = 0;
+    DiffMotionDetector diffMotionDetector;
 
 
     public PersonDetectorAndTracking() {
@@ -54,6 +56,8 @@ public class PersonDetectorAndTracking {
 
         postureDetector = new PostureDetector();
         this.movingDetector = new MovingDetector();
+
+        diffMotionDetector = new DiffMotionDetector();
     }
 
     public void startTracking() {
@@ -159,6 +163,44 @@ public class PersonDetectorAndTracking {
                     Utils.rescaleImageToDisplay(segmentations[1], input.width(), input.height()),
                     Utils.rescaleImageToDisplay(segmentations[2], input.width(), input.height())};
         }
+    }
+
+    public Mat[] detect4(Mat input) {
+        /*Using Diff Detector*/
+        Mat copyOfInput = new Mat();
+        input.copyTo(copyOfInput);
+        Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
+        Mat binary_mat = diffMotionDetector.thresholdMat;
+
+        Mat imageROI = new Mat();
+        if (diffMotionDetector.history.size() != 0) {
+            Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
+            imageROI = new Mat(binary_mat, current_rect);
+        } else {
+            binary_mat.copyTo(imageROI);
+        }
+
+        Mat status = new Mat(input.size(), CvType.CV_8UC3, Scalar.all(126));
+        String posture = postureDetector.detect(imageROI);
+        boolean moving = diffMotionDetector.isObjectMoving;
+
+        Imgproc.putText(status, posture, new Point(status.width() / 10, status.height() / 5),
+                0, 5, new Scalar(255), 2);
+        Scalar movingTextColor = new Scalar(0, 255);
+        String text = "Moving";
+        if (!moving) {
+            movingTextColor = new Scalar(0, 0, 255);
+            text = "Not Moving";
+        }
+        Imgproc.putText(status, text, new Point(status.width() / 10, status.height() / 2),
+                0, 5, movingTextColor, 2);
+
+
+        Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
+        Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
+        imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
+
+        return new Mat[]{input, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 
     public Mat[] detect3(Mat input) {

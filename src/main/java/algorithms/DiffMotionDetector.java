@@ -12,6 +12,10 @@ public class DiffMotionDetector {
     Mat background_gray;
     int threshold = 25;
     List<Rect> history = new ArrayList<>();
+    boolean isBackgroundSet = false;
+    Rect last_motion;
+    boolean isObjectMoving = false;
+    Mat thresholdMat = new Mat();
 
 
     public DiffMotionDetector() {
@@ -26,7 +30,7 @@ public class DiffMotionDetector {
         return background_gray;
     }
 
-    public Mat returnMask(Mat foregroundImage) {
+    private Mat returnMask(Mat foregroundImage) {
         if (foregroundImage.empty()) {
             return new Mat();
         }
@@ -41,14 +45,18 @@ public class DiffMotionDetector {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
             if (currentMotion != null) {
                 history.add(currentMotion);
+                isObjectMoving = isObjectMoving(currentMotion);
+                last_motion = currentMotion;
                 updateBackgroundImage(currentMotion, foreground_gray);
+
             }
         }
+        threshold_image.copyTo(thresholdMat);
         return threshold_image;
     }
 
     public void updateBackgroundImage(Rect currentMotion, Mat foreground_gray) {
-        for (int i = 0 ; i < history.size(); i++) {
+        for (int i = 0; i < history.size(); i++) {
             Rect r = history.get(i);
             if (!Utils.overlaps(r, currentMotion)) {
                 Mat imageROI = new Mat(foreground_gray, r);
@@ -56,5 +64,33 @@ public class DiffMotionDetector {
                 history.remove(i);
             }
         }
+    }
+
+    public Mat getDiffDetector(Mat currentFrame) {
+        Mat frame = new Mat();
+        if (!currentFrame.empty()) {
+            currentFrame.copyTo(frame);
+            if (!isBackgroundSet) {
+                setBackground(frame);
+                isBackgroundSet = true;
+            }
+            Mat frame_mask = returnMask(frame);
+            Rect rect;
+            if (BinaryMaskAnalyser.returnNumberOfContours(frame_mask) > 0) {
+                rect = BinaryMaskAnalyser.returnMaxAreaRectangle(frame_mask);
+                if (rect != null) {
+                    Imgproc.rectangle(frame, new Point(rect.x, rect.y),
+                            new Point(rect.x + rect.width, rect.y + rect.height),
+                            new Scalar(0, 255, 0), 2);
+                }
+            }
+        }
+        return frame;
+    }
+
+    public boolean isObjectMoving(Rect current_motion) {
+        if (last_motion == null)
+            return false;
+        return MovingDetector.isObjectMoving(current_motion, last_motion);
     }
 }

@@ -96,18 +96,13 @@ public class NewGUIController_ObjectTracking {
 
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
-                    Mat gaussianBlurFrame = imgProcess.getGaussianBlur(originalFrame);
-
-                    Mat firstRow = Utils.hstack(originalFrame, gaussianBlurFrame);
-
-                    if (!gaussianBlurFrame.empty() && grabcutActive.isSelected()) {
+                    Mat firstRow = new Mat();
+                    if (grabcutActive.isSelected()) {
                         Mat[] detection = imgProcess.personDetector(originalFrame);
-                        Mat secondRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
-                        firstRow = Utils.vstack(firstRow, secondRow);
-
+                        firstRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
                         if (detection.length == 6) {
-                            Mat thirdRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
-                            firstRow = Utils.vstack(firstRow, thirdRow);
+                            Mat secondRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
+                            firstRow = Utils.vstack(firstRow, secondRow);
                         }
                     }
                     Image image = Utils.mat2Image(firstRow);

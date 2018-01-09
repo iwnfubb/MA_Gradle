@@ -95,26 +95,7 @@ public class ImageProcess_MotionDetection {
     boolean isBackgroundSet = false;
 
     public Mat getDiffDetector() {
-        Mat frame = new Mat();
-        if (!currentFrame.empty()) {
-            currentFrame.copyTo(frame);
-            if (!isBackgroundSet) {
-                diffMotionDetector.setBackground(frame);
-                isBackgroundSet = true;
-            }
-            Mat frame_mask = diffMotionDetector.returnMask(frame);
-
-            Rect rect;
-            if (BinaryMaskAnalyser.returnNumberOfContours(frame_mask) > 0) {
-                rect = BinaryMaskAnalyser.returnMaxAreaRectangle(frame_mask);
-                if (rect != null) {
-                    Imgproc.rectangle(frame, new Point(rect.x, rect.y),
-                            new Point(rect.x + rect.width, rect.y + rect.height),
-                            new Scalar(0, 255, 0), 2);
-                }
-            }
-        }
-        return frame;
+        return diffMotionDetector.getDiffDetector(currentFrame);
     }
 
 
