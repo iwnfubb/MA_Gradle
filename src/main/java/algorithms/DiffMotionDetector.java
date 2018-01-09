@@ -23,6 +23,7 @@ public class DiffMotionDetector {
     }
 
     public void setBackground(Mat frame) {
+        Utils.convertImageByInvariantFeatures(frame).copyTo(frame);
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
@@ -34,6 +35,7 @@ public class DiffMotionDetector {
         if (foregroundImage.empty()) {
             return new Mat();
         }
+        Utils.convertImageByInvariantFeatures(foregroundImage).copyTo(foregroundImage);
         Mat foreground_gray = new Mat();
         Imgproc.cvtColor(foregroundImage, foreground_gray, Imgproc.COLOR_BGR2GRAY);
         Mat delta_image = new Mat();
@@ -51,6 +53,23 @@ public class DiffMotionDetector {
 
             }
         }
+
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
+        Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+
+        Mat labels = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+        int connectivity = 8;
+        Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
+                connectivity, CvType.CV_32S);
+        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        Imgproc.erode(threshold_image, threshold_image, kernelErode);
+        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
+        Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
+
+
+
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
     }
