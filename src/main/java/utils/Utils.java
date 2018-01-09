@@ -205,56 +205,64 @@ public final class Utils {
 
 
     public static Mat vstack(Mat mat1, Mat mat2) {
+        Mat copyMat1 = new Mat();
+        Mat copyMat2 = new Mat();
+        mat1.copyTo(copyMat1);
+        mat2.copyTo(copyMat2);
         ArrayList<Mat> list = new ArrayList<>();
-        if (mat1.channels() == 1) {
-            Imgproc.cvtColor(mat1, mat1, Imgproc.COLOR_GRAY2BGR);
+        if (copyMat1.channels() == 1) {
+            Imgproc.cvtColor(copyMat1, copyMat1, Imgproc.COLOR_GRAY2BGR);
         }
-        if (mat2.channels() == 1) {
-            Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
+        if (copyMat2.channels() == 1) {
+            Imgproc.cvtColor(copyMat2, copyMat2, Imgproc.COLOR_GRAY2BGR);
         }
         ArrayList<Mat> temp = new ArrayList<>();
-        if (mat1.width() < mat2.width()) {
-            Mat patch = new Mat(new Size(mat2.width() - mat1.width(), mat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
-            temp.add(mat1);
+        if (copyMat1.width() < copyMat2.width()) {
+            Mat patch = new Mat(new Size(copyMat2.width() - copyMat1.width(), copyMat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(copyMat1);
             temp.add(patch);
-            Core.hconcat(temp, mat1);
+            Core.hconcat(temp, copyMat1);
         }
-        if (mat1.width() > mat2.width()) {
-            Mat patch = new Mat(new Size(mat1.width() - mat2.width(), mat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
-            temp.add(mat2);
+        if (copyMat1.width() > copyMat2.width()) {
+            Mat patch = new Mat(new Size(copyMat1.width() - copyMat2.width(), copyMat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(copyMat2);
             temp.add(patch);
-            Core.hconcat(temp, mat2);
+            Core.hconcat(temp, copyMat2);
         }
-        list.add(mat1);
-        list.add(mat2);
+        list.add(copyMat1);
+        list.add(copyMat2);
         Mat result = new Mat();
         Core.vconcat(list, result);
         return result;
     }
 
     public static Mat hstack(Mat mat1, Mat mat2) {
+        Mat copyMat1 = new Mat();
+        Mat copyMat2 = new Mat();
+        mat1.copyTo(copyMat1);
+        mat2.copyTo(copyMat2);
         ArrayList<Mat> list = new ArrayList<>();
-        if (mat1.channels() == 1) {
-            Imgproc.cvtColor(mat1, mat1, Imgproc.COLOR_GRAY2BGR);
+        if (copyMat1.channels() == 1) {
+            Imgproc.cvtColor(copyMat1, copyMat1, Imgproc.COLOR_GRAY2BGR);
         }
-        if (mat2.channels() == 1) {
-            Imgproc.cvtColor(mat2, mat2, Imgproc.COLOR_GRAY2BGR);
+        if (copyMat2.channels() == 1) {
+            Imgproc.cvtColor(copyMat2, copyMat2, Imgproc.COLOR_GRAY2BGR);
         }
         ArrayList<Mat> temp = new ArrayList<>();
-        if (mat1.height() < mat2.height()) {
-            Mat patch = new Mat(new Size(mat1.width(), mat2.height() - mat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
-            temp.add(mat1);
+        if (copyMat1.height() < copyMat2.height()) {
+            Mat patch = new Mat(new Size(copyMat1.width(), copyMat2.height() - copyMat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(copyMat1);
             temp.add(patch);
-            Core.vconcat(temp, mat1);
+            Core.vconcat(temp, copyMat1);
         }
-        if (mat1.height() > mat2.height()) {
-            Mat patch = new Mat(new Size(mat2.width(), mat1.height() - mat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
-            temp.add(mat2);
+        if (copyMat1.height() > copyMat2.height()) {
+            Mat patch = new Mat(new Size(copyMat2.width(), copyMat1.height() - copyMat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            temp.add(copyMat2);
             temp.add(patch);
-            Core.vconcat(temp, mat2);
+            Core.vconcat(temp, copyMat2);
         }
-        list.add(mat1);
-        list.add(mat2);
+        list.add(copyMat1);
+        list.add(copyMat2);
         Mat result = new Mat();
         Core.hconcat(list, result);
         return result;
