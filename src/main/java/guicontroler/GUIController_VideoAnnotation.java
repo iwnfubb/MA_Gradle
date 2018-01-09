@@ -139,8 +139,7 @@ public class GUIController_VideoAnnotation {
             }
             Image image = Utils.mat2Image(newMat);
             updateImageView(imageView, image);
-        }
-        else {
+        } else {
             System.err.print("End of Stream");
         }
     }
@@ -217,14 +216,16 @@ public class GUIController_VideoAnnotation {
     }
 
     public void startDrawRect(MouseEvent mouseEvent) {
-        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height()) {
+        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height() &&
+                mouseEvent.getX() >= 0 && mouseEvent.getY() >= 0) {
             startX = mouseEvent.getX();
             startY = mouseEvent.getY();
         }
     }
 
     public void drawRect(MouseEvent mouseEvent) {
-        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height()) {
+        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height() &&
+                mouseEvent.getX() >= 0 && mouseEvent.getY() >= 0) {
             endX = mouseEvent.getX();
             endY = mouseEvent.getY();
             drawRect(originalFrame);
@@ -232,7 +233,8 @@ public class GUIController_VideoAnnotation {
     }
 
     public void stopDrawRect(MouseEvent mouseEvent) {
-        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height()) {
+        if (mouseEvent.getX() < originalFrame.width() && mouseEvent.getY() < originalFrame.height() &&
+                mouseEvent.getX() >= 0 && mouseEvent.getY() >= 0) {
             endX = mouseEvent.getX();
             endY = mouseEvent.getY();
             drawRect(originalFrame);
@@ -252,6 +254,11 @@ public class GUIController_VideoAnnotation {
         {
             if (new_value == false) {
                 resetAllValue();
+            }
+            if (new_value == true) {
+                standing.fire();
+                moving.fire();
+                ok.fire();
             }
         });
 
