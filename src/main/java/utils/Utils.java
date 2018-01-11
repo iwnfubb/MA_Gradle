@@ -7,12 +7,15 @@ import javafx.scene.image.Image;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
 
 public final class Utils {
+    public static String PATH_TO_VIDEOS_INPUT_FOLDER = "src/main/videos_input/";
+    public static String PATH_TO_VIDEOS_OUTPUT_FOLDER = "src/main/videos_output/";
+
+
     /**
      * Convert a Mat object (OpenCV) in the corresponding Image for JavaFX
      *
@@ -184,9 +187,9 @@ public final class Utils {
             new_height = (int) (new_width * ratio);
         }
 
-        if (new_width < defaultHeight && new_width < defaultWidth)
+        if (new_width < defaultHeight && new_width < defaultWidth) {
             Imgproc.resize(input, input, new Size(new_width, new_height));
-        else if (new_width > defaultWidth) {
+        } else if (new_width > defaultWidth) {
             new_width = defaultWidth;
             new_height = (int) (new_width * ratio);
             Imgproc.resize(input, input, new Size(new_width, new_height));

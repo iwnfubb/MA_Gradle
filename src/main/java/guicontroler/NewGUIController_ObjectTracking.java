@@ -6,23 +6,16 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Slider;
-import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.features2d.Features2d;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
 import utils.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,8 +48,9 @@ public class NewGUIController_ObjectTracking {
     private boolean liveVideo = false;
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-    private String fileName = "v_dead2.mp4";
-    private String outputName = "vo_" + timestamp.getTime() + fileName;
+    private String fileName = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + "v_dead2.mp4";
+
+    private String outputName =Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
     private int output_width = 1280;
     private int output_height = 720;
     private VideoWriter writer = new VideoWriter(outputName, VideoWriter.fourcc('D', 'I', 'V', 'X'), 1, new Size(output_width, output_height), true);
@@ -68,6 +62,7 @@ public class NewGUIController_ObjectTracking {
      */
     @FXML
     protected void startCamera(ActionEvent event) {
+
 
         frameCounter = 0;
         if (!this.cameraActive) {
