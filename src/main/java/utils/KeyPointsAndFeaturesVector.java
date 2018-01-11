@@ -1,11 +1,8 @@
 package utils;
 
 
-import imageprocess.ImageProcess_ObjectTracking;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-
-import java.util.List;
 
 public class KeyPointsAndFeaturesVector {
     private MatOfKeyPoint matOfKeyPoint;
@@ -28,8 +25,8 @@ public class KeyPointsAndFeaturesVector {
             Imgproc.resize(row, row, new Size(descriptors.cols() + 2, 1));
             double x = matOfKeyPoint.get(i, 0)[0];
             double y = matOfKeyPoint.get(i, 0)[1];
-            row.put(0, descriptors.cols(), x/quote);
-            row.put(0, descriptors.cols() + 1, y/quote);
+            row.put(0, descriptors.cols(), x / quote);
+            row.put(0, descriptors.cols() + 1, y / quote);
             descriptorsWithPosition.push_back(row);
         }
     }
@@ -41,8 +38,8 @@ public class KeyPointsAndFeaturesVector {
             Mat desWithPos = new Mat();
             descriptor.copyTo(desWithPos);
             Imgproc.resize(desWithPos, desWithPos, new Size(descriptors.cols() + 2, 1));
-            desWithPos.put(0, descriptors.cols(), keyPoint.pt.x/quote);
-            desWithPos.put(0, descriptors.cols() + 1, keyPoint.pt.y/quote);
+            desWithPos.put(0, descriptors.cols(), keyPoint.pt.x / quote);
+            desWithPos.put(0, descriptors.cols() + 1, keyPoint.pt.y / quote);
             matOfKeyPoint.push_back(keypointMat);
             descriptors.push_back(descriptor);
             descriptorsWithPosition.push_back(desWithPos);

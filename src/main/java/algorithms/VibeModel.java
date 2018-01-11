@@ -102,12 +102,12 @@ public class VibeModel {
                 int value_C3 = (int) image_data.get(y, x)[2];
                 /* Fills the history buffer */
                 for (int i = 0; i < historyBuffer.size(); ++i) {
-                /* Adds noise on the value */
+                    /* Adds noise on the value */
                     int value_plus_noise_C1 = value_C1 + rand.nextInt(32767) % 20 - 10;
                     int value_plus_noise_C2 = value_C2 + rand.nextInt(32767) % 20 - 10;
                     int value_plus_noise_C3 = value_C3 + rand.nextInt(32767) % 20 - 10;
 
-                /* Limits the value + noise to the [0,255] range */
+                    /* Limits the value + noise to the [0,255] range */
                     if (value_plus_noise_C1 < 0) {
                         value_plus_noise_C1 = 0;
                     }
@@ -187,9 +187,9 @@ public class VibeModel {
         for (int y = 0; y < image_data.height(); y++) {
             for (int x = 0; x < image_data.width(); x++) {
                 if (segmentation_map.get(y, x)[0] > 0) {
-                /* We need to check the full border and swap values with the first or second historyImage.
-                 * We still need to find a match before we can stop our search.
-                 */
+                    /* We need to check the full border and swap values with the first or second historyImage.
+                     * We still need to find a match before we can stop our search.
+                     */
                     for (int numberOfTests = 0; numberOfTests < historyBuffer.size(); numberOfTests++) {
                         if (distance_is_close_8u_C3R(
                                 (int) image_data.get(y, x)[0],
@@ -202,7 +202,7 @@ public class VibeModel {
                             segmentation_map.put(y, x, --segmentation_map.get(y, x)[0]);
                         }
 
-                    /* Swaping: Putting found value in history image buffer. */
+                        /* Swaping: Putting found value in history image buffer. */
                         double[] temp = new double[]{swappingImageBuffer.get(y, x)[0], swappingImageBuffer.get(y, x)[1], swappingImageBuffer.get(y, x)[2]};
                         double[] temp1 = new double[]{historyBuffer.get(numberOfTests).get(y, x)[0], historyBuffer.get(numberOfTests).get(y, x)[1], historyBuffer.get(numberOfTests).get(y, x)[2]};
                         swappingImageBuffer.put(y, x, temp1);
@@ -222,7 +222,7 @@ public class VibeModel {
     }
 
     public void vibeModel_Update_8u_C3R(Mat image_data, Mat updating_mask) {
-         /* All the frame, except the border. */
+        /* All the frame, except the border. */
         int shift, indX, indY;
         int x, y;
 
@@ -232,7 +232,7 @@ public class VibeModel {
 
             while (indX < width - 1) {
                 if (updating_mask.get(y, indX)[0] == 0) {
-        /* In-place substitution. */
+                    /* In-place substitution. */
                     int r = (int) image_data.get(y, indX)[0];
                     int g = (int) image_data.get(y, indX)[1];
                     int b = (int) image_data.get(y, indX)[2];

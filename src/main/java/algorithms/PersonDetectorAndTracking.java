@@ -1,18 +1,14 @@
 package algorithms;
 
-import imageprocess.ImageProcess_MotionDetection;
 import org.opencv.core.*;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.HOGDescriptor;
 import org.opencv.video.BackgroundSubtractorKNN;
-import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
-import org.opencv.videoio.Videoio;
 import utils.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;

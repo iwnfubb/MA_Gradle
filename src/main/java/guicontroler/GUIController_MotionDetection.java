@@ -1,7 +1,6 @@
 package guicontroler;
 
 import imageprocess.ImageProcess_MotionDetection;
-import utils.Utils;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -11,6 +10,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
+import utils.Utils;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

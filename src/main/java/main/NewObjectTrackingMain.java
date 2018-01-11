@@ -1,6 +1,5 @@
 package main;
 
-import guicontroler.GUIController_ObjectTracking;
 import guicontroler.NewGUIController_ObjectTracking;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

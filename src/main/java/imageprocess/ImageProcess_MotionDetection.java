@@ -1,10 +1,10 @@
 package imageprocess;
 
-import algorithms.BinaryMaskAnalyser;
 import algorithms.DiffMotionDetector;
 import algorithms.KernelDensityEstimator;
 import algorithms.Vibe;
-import org.opencv.core.*;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
