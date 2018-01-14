@@ -22,7 +22,6 @@ public class DiffMotionDetector {
     }
 
     public void setBackground(Mat frame) {
-        Utils.convertImageByInvariantFeatures(frame).copyTo(frame);
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
@@ -34,7 +33,6 @@ public class DiffMotionDetector {
         if (foregroundImage.empty()) {
             return new Mat();
         }
-        Utils.convertImageByInvariantFeatures(foregroundImage).copyTo(foregroundImage);
         Mat foreground_gray = new Mat();
         Imgproc.cvtColor(foregroundImage, foreground_gray, Imgproc.COLOR_BGR2GRAY);
         Mat delta_image = new Mat();
