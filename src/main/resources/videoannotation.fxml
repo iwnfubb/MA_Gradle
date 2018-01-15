@@ -89,13 +89,26 @@
     <bottom>
         <BorderPane prefHeight="36.0" prefWidth="800.0" BorderPane.alignment="CENTER">
          <left>
-            <Label prefHeight="17.0" prefWidth="908.0" text="1. Open Video 2. Mark BB 3. Check properties 4. Press &quot;Space&quot; to next Frame" BorderPane.alignment="CENTER" />
+            <Button fx:id="openButton" mnemonicParsing="false" onAction="#openVideo" prefHeight="25.0" prefWidth="141.0" text="Open ..." BorderPane.alignment="CENTER" />
          </left>
          <center>
-            <Button fx:id="openButton" mnemonicParsing="false" onAction="#openVideo" prefHeight="25.0" prefWidth="141.0" text="Open ..." BorderPane.alignment="CENTER" />
+            <Slider fx:id="timerbar" prefHeight="14.0" prefWidth="1231.0" BorderPane.alignment="CENTER" />
          </center>
          <right>
-            <Button fx:id="openButton1" mnemonicParsing="false" onAction="#nextFrame" prefHeight="25.0" prefWidth="141.0" text="Next Frame" BorderPane.alignment="CENTER" />
+            <SplitPane dividerPositions="0.5211726384364821" prefHeight="36.0" prefWidth="309.0" BorderPane.alignment="CENTER">
+              <items>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                     <children>
+                        <Button fx:id="openButton1" layoutX="4.0" layoutY="2.0" mnemonicParsing="false" onAction="#nextFrame" prefHeight="25.0" prefWidth="154.0" text="Next Frame" />
+                     </children>
+                  </AnchorPane>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                     <children>
+                        <Button fx:id="save" layoutY="2.0" mnemonicParsing="false" onAction="#save" prefHeight="25.0" prefWidth="141.0" text="Save" />
+                     </children>
+                  </AnchorPane>
+              </items>
+            </SplitPane>
          </right>
         </BorderPane>
     </bottom>

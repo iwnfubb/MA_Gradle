@@ -16,11 +16,13 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 import utils.CSVWriter;
+import utils.EvaluationValue;
 import utils.Utils;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -57,6 +59,9 @@ public class GUIController_VideoAnnotation {
     @FXML
     private Button openButton;
 
+    @FXML
+    private Slider timerbar;
+
 
     @FXML
     private ImageView imageView;
@@ -82,7 +87,7 @@ public class GUIController_VideoAnnotation {
     double endX = 0;
     double endY = 0;
     Mat originalFrame = new Mat();
-
+    ArrayList<EvaluationValue> list = new ArrayList<>();
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -100,6 +105,7 @@ public class GUIController_VideoAnnotation {
                 this.capture.open(fileName);
                 // is the video stream available?
                 if (this.capture.isOpened()) {
+                    iniTimerBar();
                     this.cameraActive = true;
                     imgProcess.getOriginalFrame().copyTo(originalFrame);
                     drawRect(originalFrame);
@@ -116,7 +122,7 @@ public class GUIController_VideoAnnotation {
             this.cameraActive = false;
 
             // stop the timer
-            this.stopAcquisition();
+            //this.stopAcquisition();
         }
     }
 
@@ -157,6 +163,27 @@ public class GUIController_VideoAnnotation {
 
     }
 
+    @FXML
+    protected void save(ActionEvent event) {
+        try {
+            for (int i = 0; i < list.size(); i++) {
+                CSVWriter.writeLine(writer, list.get(i).toCSVFormat());
+            }
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Information Dialog");
+            alert.setHeaderText("Look, an Information Dialog");
+            alert.setContentText("Save done!");
+
+            alert.showAndWait();
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NullPointerException ex) {
+        }
+    }
+
+
     private List evaluation() {
         if (person_there.isSelected()) {
             return Arrays.asList(
@@ -175,6 +202,9 @@ public class GUIController_VideoAnnotation {
 
     private void stopAcquisition() {
         try {
+            for (int i = 0; i < list.size(); i++) {
+                CSVWriter.writeLine(writer, list.get(i).toCSVFormat());
+            }
             writer.flush();
             writer.close();
         } catch (IOException e) {
@@ -199,12 +229,14 @@ public class GUIController_VideoAnnotation {
     }
 
     private void updateImageView(ImageView view, Image image) {
-        Platform.runLater(() -> {
-            view.setFitWidth(image.getWidth());
-            view.setFitHeight(image.getHeight());
-        });
-        Utils.onFXThread(view.imageProperty(), image);
+        if (image != null) {
+            Platform.runLater(() -> {
+                view.setFitWidth(image.getWidth());
+                view.setFitHeight(image.getHeight());
+            });
 
+        Utils.onFXThread(view.imageProperty(), image);
+        }
     }
 
     public void setClosed() {
@@ -304,4 +336,47 @@ public class GUIController_VideoAnnotation {
             e.printStackTrace();
         }
     }
+
+    private void iniTimerBar() {
+        if (this.capture.isOpened()) {
+            list = new ArrayList<>();
+            for (int i = 0; i < this.capture.get(Videoio.CAP_PROP_FRAME_COUNT); i++) {
+                EvaluationValue evaluationValue = new EvaluationValue();
+                evaluationValue.setFrame_number((i + 1) + "");
+                list.add(evaluationValue);
+            }
+
+            timerbar.setMin(0);
+            timerbar.setMax(this.capture.get(Videoio.CAP_PROP_FRAME_COUNT));
+            timerbar.setValue(0);
+            timerbar.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue.intValue() < this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)) {
+                    Platform.runLater(() -> frame_number.setText(capture.get(Videoio.CAP_PROP_POS_FRAMES) + ""));
+                    capture.set(Videoio.CAP_PROP_POS_FRAMES, newValue.doubleValue());
+                    imgProcess.getOriginalFrame().copyTo(originalFrame);
+                    Platform.runLater(() -> updateImageView(imageView, Utils.mat2Image(originalFrame)));
+
+                    int startindex = oldValue.intValue();
+                    int length = newValue.intValue() - oldValue.intValue();
+                    int sign = 1;
+                    if (length < 0) {
+                        sign = -1;
+                        length = Math.abs(length);
+                    }
+
+                    for (int i = 0; i < length; i++) {
+                        if (person_there.isSelected() && startindex >= 0 && startindex < list.size()) {
+                            list.get(startindex).setPerson_there(person_there.isSelected() + "");
+                            list.get(startindex).setPosture(posture.getSelectedToggle().getUserData().toString());
+                            list.get(startindex).setIsMoving(isMoving.getSelectedToggle().getUserData().toString());
+                            list.get(startindex).setStatus(status.getSelectedToggle().getUserData().toString());
+                        }
+
+                        startindex = startindex + sign;
+                    }
+                }
+            });
+        }
+    }
+
 }
