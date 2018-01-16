@@ -208,8 +208,9 @@ public class GUIController_VideoAnnotation {
             writer.flush();
             writer.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.print("Stream close!");
         } catch (NullPointerException ex) {
+            System.out.print("Stream close!");
         }
         if (this.timer != null && !this.timer.isShutdown()) {
             try {
@@ -350,7 +351,7 @@ public class GUIController_VideoAnnotation {
             timerbar.setMax(this.capture.get(Videoio.CAP_PROP_FRAME_COUNT));
             timerbar.setValue(0);
             timerbar.valueProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue.intValue() < this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)) {
+                if (newValue.intValue() <= this.capture.get(Videoio.CAP_PROP_FRAME_COUNT)) {
                     Platform.runLater(() -> frame_number.setText(capture.get(Videoio.CAP_PROP_POS_FRAMES) + ""));
                     capture.set(Videoio.CAP_PROP_POS_FRAMES, newValue.doubleValue());
                     imgProcess.getOriginalFrame().copyTo(originalFrame);
