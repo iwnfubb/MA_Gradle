@@ -45,8 +45,6 @@ public class TestFuzzy {
 
         JFuzzyChart.get().chart(status, status.getDefuzzifier(), true);
 
-        //fis.getVariable("tip").chartDefuzzifier(true);
-
         // Print ruleSet
         System.out.println(fb);
         System.out.println("Status: " + status.getValue() + " bad: " + status.getMembership("bad") + " good: " + status.getMembership("good"));
