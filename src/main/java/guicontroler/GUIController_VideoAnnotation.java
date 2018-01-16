@@ -106,6 +106,7 @@ public class GUIController_VideoAnnotation {
                 // is the video stream available?
                 if (this.capture.isOpened()) {
                     iniTimerBar();
+                    resetAllValue();
                     this.cameraActive = true;
                     imgProcess.getOriginalFrame().copyTo(originalFrame);
                     drawRect(originalFrame);
@@ -236,7 +237,7 @@ public class GUIController_VideoAnnotation {
                 view.setFitHeight(image.getHeight());
             });
 
-        Utils.onFXThread(view.imageProperty(), image);
+            Utils.onFXThread(view.imageProperty(), image);
         }
     }
 
@@ -285,9 +286,7 @@ public class GUIController_VideoAnnotation {
                 resetAllValue();
             }
             if (new_value == true) {
-                standing.fire();
-                moving.fire();
-                ok.fire();
+                initAllValue();
             }
         });
 
@@ -322,6 +321,30 @@ public class GUIController_VideoAnnotation {
         isMoving.selectToggle(null);
         status.selectToggle(null);
         drawRect(originalFrame);
+
+        standing.setDisable(true);
+        bending.setDisable(true);
+        sitting.setDisable(true);
+        laying.setDisable(true);
+        moving.setDisable(true);
+        not_moving.setDisable(true);
+        ok.setDisable(true);
+        not_ok.setDisable(true);
+    }
+
+    private void initAllValue() {
+        standing.setDisable(false);
+        bending.setDisable(false);
+        sitting.setDisable(false);
+        laying.setDisable(false);
+        moving.setDisable(false);
+        not_moving.setDisable(false);
+        ok.setDisable(false);
+        not_ok.setDisable(false);
+
+        standing.fire();
+        moving.fire();
+        ok.fire();
     }
 
     private void setTextOnBBLabel() {
