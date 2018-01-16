@@ -42,8 +42,8 @@ END_FUZZIFY
 
 // Defzzzify output variable 'status'
 DEFUZZIFY status
-    TERM bad := (0,0) (5,1) (10,0);
-    TERM good := (10,0) (15,1) (20,0);
+    TERM bad := gauss 4 1;
+    TERM good := gauss 6 1;
     // Use 'Center Of Gravity' defuzzification method
     METHOD : COG;
     // Default value is 0 (if no rule activates defuzzifier)
@@ -54,19 +54,20 @@ RULEBLOCK No1
     // Use 'min' for 'and' (also implicit use 'max'
     // for 'or' to fulfill DeMorgan's Law)
     AND : MIN;
+    OR : MAX;
     // Use 'min' activation method
     ACT : MIN;
     // Use 'max' accumulation method
     ACCU : MAX;
 
-    RULE 1 : IF posture IS laying AND (NOT xposition IS good) OR (NOT yposition IS good)
+    RULE 1 : IF (posture IS laying OR posture IS sitting) AND (NOT xposition IS good) OR (NOT yposition IS good)
                 THEN status IS bad;
 
-    RULE 2 : IF posture IS laying AND time IS day
-                THEN status IS bad;
+    RULE 2 : IF (posture IS laying OR posture IS sitting) AND (xposition IS good) AND (yposition IS good)
+                THEN status IS good;
 
-    RULE 3 : IF posture IS laying AND (time IS night1 OR time IS night2) AND (xposition IS good) AND ( yposition IS good)
-                    THEN status IS good;
+    RULE 3 : IF posture IS laying AND time IS day
+                THEN status IS bad;
 
     RULE 4 : IF posture IS standing AND time IS day
                 THEN status is good;
