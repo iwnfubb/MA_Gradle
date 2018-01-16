@@ -31,12 +31,12 @@ END_FUZZIFY
 
 // Fuzzify input variable 'time'
 FUZZIFY xposition
-    TERM good := gauss 360 100 ;
+    TERM good := gauss 360 50 ;
 END_FUZZIFY
 
 // Fuzzify input variable 'time'
 FUZZIFY yposition
-    TERM good := gauss 540 300 ;
+    TERM good := gauss 500 50 ;
 END_FUZZIFY
 
 

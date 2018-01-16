@@ -1,11 +1,11 @@
-package utils;
+package main;
 
 import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.FunctionBlock;
 import net.sourceforge.jFuzzyLogic.plot.JFuzzyChart;
 import net.sourceforge.jFuzzyLogic.rule.Variable;
 
-public class Test {
+public class TestFuzzy {
     public static void main(String[] args) {
         String filename = "tipper.fcl";
         FIS fis = FIS.load(filename, true);
@@ -19,11 +19,6 @@ public class Test {
         FunctionBlock fb = fis.getFunctionBlock(null);
 
         // Set inputs
-        fb.setVariable("posture", 1);
-        fb.setVariable("time", 24);
-        fb.setVariable("xposition", 320);
-        fb.setVariable("yposition", 280);
-
         Variable posture = fb.getVariable("posture");
         posture.setValue(1);
         JFuzzyChart.get().chart(posture,true);
@@ -33,11 +28,11 @@ public class Test {
         JFuzzyChart.get().chart(time,true);
 
         Variable xposition = fb.getVariable("xposition");
-        xposition.setValue(300);
+        xposition.setValue(275);
         JFuzzyChart.get().chart(xposition,true);
 
         Variable yposition = fb.getVariable("yposition");
-        yposition.setValue(300);
+        yposition.setValue(375);
         JFuzzyChart.get().chart(yposition,true);
 
         // Evaluate
