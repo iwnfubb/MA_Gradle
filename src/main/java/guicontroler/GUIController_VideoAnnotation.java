@@ -313,7 +313,6 @@ public class GUIController_VideoAnnotation {
     }
 
     private void resetAllValue() {
-        System.out.print("N");
         startX = 0;
         startY = 0;
         endX = 0;
