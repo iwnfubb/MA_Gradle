@@ -89,8 +89,8 @@ public class PersonDetectorAndTracking {
             drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
             input.copyTo(imageWithBestRect);
-            drawImageWithRect(imageWithBestRect, movingDetector.bestRect);
-            drawImageWithRect(person, movingDetector.bestRect);
+            drawImageWithRect(imageWithBestRect, movingDetector.bestRect, new Scalar(255, 0, 0));
+            drawImageWithRect(person, movingDetector.bestRect, new Scalar(255, 0, 0));
             Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
             log("Background backgroundDensity: " + movingDetector.backgroundDensity);
 
@@ -172,6 +172,7 @@ public class PersonDetectorAndTracking {
         if (diffMotionDetector.history.size() != 0) {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             imageROI = new Mat(binary_mat, current_rect);
+            drawImageWithRect(diff_mark, current_rect, new Scalar(0, 255, 0));
         } else {
             binary_mat.copyTo(imageROI);
         }
@@ -230,8 +231,8 @@ public class PersonDetectorAndTracking {
             drawRect(person, foundLocations, new Scalar(0, 0, 255));
 
             input.copyTo(imageWithBestRect);
-            drawImageWithRect(imageWithBestRect, movingDetector.bestRect);
-            drawImageWithRect(person, movingDetector.bestRect);
+            drawImageWithRect(imageWithBestRect, movingDetector.bestRect, new Scalar(255, 0, 0));
+            drawImageWithRect(person, movingDetector.bestRect, new Scalar(255, 0, 0));
             Rect r = Utils.convertDoubleToRect(movingDetector.bestRect);
             log("Background backgroundDensity: " + movingDetector.backgroundDensity);
 
@@ -405,11 +406,18 @@ public class PersonDetectorAndTracking {
         return result;
     }
 
-    private Mat drawImageWithRect(Mat input, double[] bestRect) {
+    private Mat drawImageWithRect(Mat input, double[] bestRect, Scalar color) {
         Rect r = new Rect(bestRect);
         MatOfRect matOfRect = new MatOfRect();
         matOfRect.fromArray(r);
-        drawRect(input, matOfRect, new Scalar(255, 0, 0));
+        drawRect(input, matOfRect, color);
+        return input;
+    }
+
+    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(bestRect);
+        drawRect(input, matOfRect, color);
         return input;
     }
 
