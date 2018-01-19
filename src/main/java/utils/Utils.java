@@ -130,11 +130,15 @@ public final class Utils {
 
 
     public static double euclideandistance(Rect rect1, Rect rect2) {
-        double centerX1 = rect1.x + rect1.width / 2;
-        double centerY1 = rect1.y + rect1.height / 2;
-        double centerX2 = rect2.x + rect2.width / 2;
-        double centerY2 = rect2.y + rect2.height / 2;
-        return Math.sqrt(Math.pow(centerX1 - centerX2, 2) + Math.pow(centerY1 - centerY2, 2));
+        Point center1 = getCenter(rect1);
+        Point center2 = getCenter(rect2);
+        return Math.sqrt(Math.pow(center1.x - center2.x, 2) + Math.pow(center1.y - center2.y, 2));
+    }
+
+    public static Point getCenter(Rect rect) {
+        double centerX = rect.x + rect.width / 2;
+        double centerY = rect.y + rect.height / 2;
+        return new Point(centerX, centerY);
     }
 
 

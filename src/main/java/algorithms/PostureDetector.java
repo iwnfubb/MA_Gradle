@@ -22,7 +22,7 @@ public class PostureDetector {
         averageHistogram = new AverageHistogram();
     }
 
-    public String detect(Mat input) {
+    public int detect(Mat input) {
         falsePositive = false;
         if (input.width() < input.height()) {
             Size original_size = input.size();
@@ -74,7 +74,7 @@ public class PostureDetector {
             }
 
             last_index = index;
-            return getStatus(index);
+            return index;
         } else {
             Size original_size = input.size();
             double ratio = original_size.height / original_size.width;
@@ -124,7 +124,7 @@ public class PostureDetector {
             }
 
             last_index = index;
-            return getStatus(index);
+            return index;
         }
 
     }
@@ -158,7 +158,7 @@ public class PostureDetector {
         return -Math.log10(sum);
     }
 
-    private String getStatus(int index) {
+    public String getStatusInString(int index) {
         String str = "";
         if (index == 0) {
             str = "Standing";

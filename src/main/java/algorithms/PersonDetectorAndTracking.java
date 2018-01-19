@@ -34,6 +34,8 @@ public class PersonDetectorAndTracking {
     double finalThreshold = 0;
     DiffMotionDetector diffMotionDetector;
 
+    FuzzyModel fuzzyModel;
+
 
     public PersonDetectorAndTracking() {
         this.hog = new HOGDescriptor();
@@ -54,6 +56,8 @@ public class PersonDetectorAndTracking {
         this.movingDetector = new MovingDetector();
 
         diffMotionDetector = new DiffMotionDetector();
+
+        fuzzyModel = new FuzzyModel();
     }
 
     public void startTracking() {
@@ -163,6 +167,7 @@ public class PersonDetectorAndTracking {
 
     public Mat[] detect4(Mat input) {
         /*Using Diff Detector*/
+        int fontSCale = 2;
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
         Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
@@ -178,20 +183,35 @@ public class PersonDetectorAndTracking {
         }
 
         Mat status = new Mat(input.size(), CvType.CV_8UC3, Scalar.all(126));
-        String posture = postureDetector.detect(imageROI);
+        int posture = postureDetector.detect(imageROI);
+        String postureInString = postureDetector.getStatusInString(posture);
         boolean moving = diffMotionDetector.isObjectMoving;
 
-        Imgproc.putText(status, posture, new Point(status.width() / 10, status.height() / 5),
-                0, 5, new Scalar(255), 2);
+        Imgproc.putText(status, postureInString, new Point(status.width() / 10, status.height() / 5),
+                0, fontSCale, new Scalar(255), 2);
         Scalar movingTextColor = new Scalar(0, 255);
         String text = "Moving";
         if (!moving) {
             movingTextColor = new Scalar(0, 0, 255);
             text = "Not Moving";
         }
-        Imgproc.putText(status, text, new Point(status.width() / 10, status.height() / 2),
-                0, 5, movingTextColor, 2);
+        Imgproc.putText(status, text, new Point(status.width() / 10, status.height() / 3),
+                0, fontSCale, movingTextColor, 2);
 
+        if (diffMotionDetector.history.size() != 0) {
+            Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
+            Point center = Utils.getCenter(current_rect);
+            log(center.toString());
+            String[] evaluate = fuzzyModel.evaluate(posture, 2, center.x, center.y);
+            Scalar statusColor = new Scalar(0, 0, 0);
+            Imgproc.putText(status, evaluate[0], new Point(status.width() / 10, status.height() / 2),
+                    0, fontSCale, statusColor, 2);
+            Imgproc.putText(status, evaluate[1], new Point(status.width() / 10, status.height() / 1.5),
+                    0, fontSCale, statusColor, 2);
+            Imgproc.putText(status, evaluate[2], new Point(status.width() / 10, status.height() / 1.7),
+                    0, fontSCale, statusColor, 2);
+
+        }
 
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
@@ -657,7 +677,7 @@ public class PersonDetectorAndTracking {
         input.copyTo(inputWithForeGroundMask, foregroundMask);
 
 
-        String posture = postureDetector.detect(foregroundMaskWithBorder);
+        String posture = postureDetector.getStatusInString(postureDetector.detect(foregroundMaskWithBorder));
         Imgproc.putText(foregroundMaskWithBorder, posture, new Point(10, 10),
                 0, 0.5, new Scalar(255), 2);
 

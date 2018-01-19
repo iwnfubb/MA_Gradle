@@ -24,15 +24,15 @@ public class TestFuzzy {
         JFuzzyChart.get().chart(posture,true);
 
         Variable time = fb.getVariable("time");
-        time.setValue(24);
+        time.setValue(5);
         JFuzzyChart.get().chart(time,true);
 
         Variable xposition = fb.getVariable("xposition");
-        xposition.setValue(275);
+        xposition.setValue(833);
         JFuzzyChart.get().chart(xposition,true);
 
         Variable yposition = fb.getVariable("yposition");
-        yposition.setValue(375);
+        yposition.setValue(461);
         JFuzzyChart.get().chart(yposition,true);
 
         // Evaluate
@@ -48,6 +48,5 @@ public class TestFuzzy {
         // Print ruleSet
         System.out.println(fb);
         System.out.println("Status: " + status.getValue() + " bad: " + status.getMembership("bad") + " good: " + status.getMembership("good"));
-
     }
 }
