@@ -52,19 +52,18 @@ public class DiffMotionDetector {
         }
 
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
-        Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+        //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
 
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
         int connectivity = 8;
-        Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
-                connectivity, CvType.CV_32S);
-        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        //Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
+        //        connectivity, CvType.CV_32S);
+        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.erode(threshold_image, threshold_image, kernelErode);
-        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(10, 10));
+        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
-
 
 
         threshold_image.copyTo(thresholdMat);
