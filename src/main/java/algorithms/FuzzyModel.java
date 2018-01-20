@@ -3,13 +3,14 @@ package algorithms;
 import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.FunctionBlock;
 import net.sourceforge.jFuzzyLogic.rule.Variable;
+import utils.Utils;
 
 public class FuzzyModel {
 
     FunctionBlock fb;
 
     public FuzzyModel() {
-        String filename = "tipper.fcl";
+        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "tipper.fcl";
         FIS fis = FIS.load(filename, true);
 
         if (fis == null) {

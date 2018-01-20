@@ -4,10 +4,11 @@ import net.sourceforge.jFuzzyLogic.FIS;
 import net.sourceforge.jFuzzyLogic.FunctionBlock;
 import net.sourceforge.jFuzzyLogic.plot.JFuzzyChart;
 import net.sourceforge.jFuzzyLogic.rule.Variable;
+import utils.Utils;
 
 public class TestFuzzy {
     public static void main(String[] args) {
-        String filename = "tipper.fcl";
+        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "tipper.fcl";
         FIS fis = FIS.load(filename, true);
 
         if (fis == null) {
@@ -21,25 +22,25 @@ public class TestFuzzy {
         // Set inputs
         Variable posture = fb.getVariable("posture");
         posture.setValue(1);
-        JFuzzyChart.get().chart(posture,true);
+        JFuzzyChart.get().chart(posture, true);
 
         Variable time = fb.getVariable("time");
         time.setValue(5);
-        JFuzzyChart.get().chart(time,true);
+        JFuzzyChart.get().chart(time, true);
 
         Variable xposition = fb.getVariable("xposition");
         xposition.setValue(833);
-        JFuzzyChart.get().chart(xposition,true);
+        JFuzzyChart.get().chart(xposition, true);
 
         Variable yposition = fb.getVariable("yposition");
         yposition.setValue(461);
-        JFuzzyChart.get().chart(yposition,true);
+        JFuzzyChart.get().chart(yposition, true);
 
         // Evaluate
         fb.evaluate();
         // Show output variable's chart
         Variable status = fb.getVariable("status");
-        JFuzzyChart.get().chart(status,true);
+        JFuzzyChart.get().chart(status, true);
 
         status.defuzzify();
 
