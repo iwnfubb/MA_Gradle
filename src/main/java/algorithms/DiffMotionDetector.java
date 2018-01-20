@@ -29,14 +29,14 @@ public class DiffMotionDetector {
         return background_gray;
     }
 
-    private Mat returnMask(Mat foregroundImage) {
-        if (foregroundImage.empty()) {
+    private Mat returnMask(Mat frame) {
+        if (frame.empty()) {
             return new Mat();
         }
-        Mat foreground_gray = new Mat();
-        Imgproc.cvtColor(foregroundImage, foreground_gray, Imgproc.COLOR_BGR2GRAY);
+        Mat image_gray = new Mat();
+        Imgproc.cvtColor(frame, image_gray, Imgproc.COLOR_BGR2GRAY);
         Mat delta_image = new Mat();
-        Core.absdiff(background_gray, foreground_gray, delta_image);
+        Core.absdiff(background_gray, image_gray, delta_image);
         Mat threshold_image = new Mat();
 
         Imgproc.threshold(delta_image, threshold_image, threshold, 255, Imgproc.THRESH_BINARY);
@@ -46,39 +46,94 @@ public class DiffMotionDetector {
                 history.add(currentMotion);
                 isObjectMoving = isObjectMoving(currentMotion);
                 last_motion = currentMotion;
-                updateBackgroundImage(currentMotion, foreground_gray);
-
+                updateBackgroundImage(currentMotion, image_gray);
+                //Rect maxRect = getMaxRect(history);
+                //updateBackgroundImage2(maxRect, image_gray);
             }
         }
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(20, 15));
-        //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
 
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
         int connectivity = 8;
-        //Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
-        //        connectivity, CvType.CV_32S);
+
         Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.erode(threshold_image, threshold_image, kernelErode);
         Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
-
+        //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+        Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
+               connectivity, CvType.CV_32S);
 
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
     }
 
-    public void updateBackgroundImage(Rect currentMotion, Mat foreground_gray) {
+    public void updateBackgroundImage(Rect currentMotion, Mat image_gray) {
         for (int i = 0; i < history.size(); i++) {
             Rect r = history.get(i);
             if (!Utils.overlaps(r, currentMotion)) {
-                Mat imageROI = new Mat(foreground_gray, r);
+                Mat imageROI = new Mat(image_gray, r);
                 imageROI.copyTo(background_gray.colRange(r.x, r.x + imageROI.cols()).rowRange(r.y, r.y + imageROI.rows()));
                 history.remove(i);
             }
         }
+    }
+
+    public void updateBackgroundImage2(Rect currentMotion, Mat image_gray) {
+        //Mat imageROI = new Mat(image_gray, r);
+        Rect topRect = new Rect(0, 0, image_gray.width(), currentMotion.y);
+        Mat topImage = new Mat(image_gray, topRect);
+
+        Rect bottomRect = new Rect(0, currentMotion.y + currentMotion.height,
+                image_gray.width(), image_gray.height() - (currentMotion.y + currentMotion.height));
+        Mat bottomImage = new Mat(image_gray, bottomRect);
+
+        Rect leftRect = new Rect(0, 0, currentMotion.x, image_gray.height());
+        Mat leftImage = new Mat(image_gray, leftRect);
+
+        Rect rightRect = new Rect(currentMotion.x + currentMotion.width, 0,
+                image_gray.width() - (currentMotion.x + currentMotion.width), image_gray.height());
+        Mat rightImage = new Mat(image_gray, rightRect);
+
+
+        topImage.copyTo(background_gray.rowRange(0, topImage.rows()));
+        System.out.println("top");
+        bottomImage.copyTo(background_gray.rowRange(currentMotion.y + currentMotion.height, background_gray.rows()));
+        System.out.println("bottom");
+        leftImage.copyTo(background_gray.colRange(0, leftImage.cols()));
+        System.out.println("left");
+        rightImage.copyTo(background_gray.colRange(currentMotion.x + currentMotion.width, background_gray.cols()));
+        System.out.println("right");
+    }
+
+    private Rect getMaxRect(List<Rect> list) {
+        if (list.size() > 1) {
+            int minX = 1280;
+            int minY = 720;
+            int maxX = 0;
+            int maxY = 0;
+            for (Rect r : list) {
+                if (r.x < minX) {
+                    minX = r.x;
+                }
+                if (r.x + r.width > maxX) {
+                    maxX = r.x + r.width;
+                }
+                if (r.y < minY) {
+                    minY = r.y;
+                }
+                if (r.y + r.height > maxY) {
+                    maxY = r.y + r.height;
+                }
+            }
+            return new Rect(minX, minY, maxX - minX, maxY - minY);
+        } else {
+            return new Rect(0, 0, background_gray.width(), background_gray.height());
+        }
+
     }
 
     public Mat getDiffDetector(Mat currentFrame) {
@@ -104,8 +159,9 @@ public class DiffMotionDetector {
     }
 
     public boolean isObjectMoving(Rect current_motion) {
-        if (last_motion == null)
+        if (last_motion == null) {
             return false;
+        }
         return MovingDetector.isObjectMoving(current_motion, last_motion);
     }
 }
