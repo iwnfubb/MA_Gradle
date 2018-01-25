@@ -52,8 +52,8 @@ public class NewGUIController_ObjectTracking {
     private String fileName = "v_sleep2.mp4";
     private String inputPath = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + fileName;
     private String outputPath =Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
-    private int output_width = 1280;
-    private int output_height = 720;
+    private int output_width = 1280*3;
+    private int output_height = 720*3;
     private VideoWriter writer = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
 
     /**
