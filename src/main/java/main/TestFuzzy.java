@@ -8,7 +8,7 @@ import utils.Utils;
 
 public class TestFuzzy {
     public static void main(String[] args) {
-        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "tipper.fcl";
+        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "example.fcl";
         FIS fis = FIS.load(filename, true);
 
         if (fis == null) {
@@ -20,26 +20,14 @@ public class TestFuzzy {
         FunctionBlock fb = fis.getFunctionBlock(null);
 
         // Set inputs
-        Variable posture = fb.getVariable("posture");
-        posture.setValue(1);
+        Variable posture = fb.getVariable("temperature");
+        posture.setValue(23);
         JFuzzyChart.get().chart(posture, true);
-
-        Variable time = fb.getVariable("time");
-        time.setValue(5);
-        JFuzzyChart.get().chart(time, true);
-
-        Variable xposition = fb.getVariable("xposition");
-        xposition.setValue(833);
-        JFuzzyChart.get().chart(xposition, true);
-
-        Variable yposition = fb.getVariable("yposition");
-        yposition.setValue(461);
-        JFuzzyChart.get().chart(yposition, true);
 
         // Evaluate
         fb.evaluate();
         // Show output variable's chart
-        Variable status = fb.getVariable("status");
+        Variable status = fb.getVariable("thermostat");
         JFuzzyChart.get().chart(status, true);
 
         status.defuzzify();
@@ -47,7 +35,6 @@ public class TestFuzzy {
         JFuzzyChart.get().chart(status, status.getDefuzzifier(), true);
 
         // Print ruleSet
-        System.out.println(fb);
-        System.out.println("Status: " + status.getValue() + " bad: " + status.getMembership("bad") + " good: " + status.getMembership("good"));
+        System.out.println("Status: " + status.getValue());
     }
 }
