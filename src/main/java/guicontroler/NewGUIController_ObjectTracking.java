@@ -48,12 +48,13 @@ public class NewGUIController_ObjectTracking {
     private boolean liveVideo = false;
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-    private String fileName = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + "v_dead2.mp4";
 
-    private String outputName =Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
-    private int output_width = 1280;
-    private int output_height = 720;
-    private VideoWriter writer = new VideoWriter(outputName, VideoWriter.fourcc('D', 'I', 'V', 'X'), 1, new Size(output_width, output_height), true);
+    private String fileName = "v_sleep2.mp4";
+    private String inputPath = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + fileName;
+    private String outputPath =Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
+    private int output_width = 1280*3;
+    private int output_height = 720*3;
+    private VideoWriter writer = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -71,7 +72,7 @@ public class NewGUIController_ObjectTracking {
             if (liveVideo) {
                 this.capture.open(cameraId);
             } else {
-                this.capture.open(fileName);
+                this.capture.open(inputPath);
             }
             ini();
             // is the video stream available?
