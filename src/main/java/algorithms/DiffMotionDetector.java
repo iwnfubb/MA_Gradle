@@ -15,6 +15,8 @@ public class DiffMotionDetector {
     Rect last_motion;
     boolean isObjectMoving = false;
     Mat thresholdMat = new Mat();
+    boolean isCameraMoving = false;
+    double backgroundDensity = 0;
 
 
     public DiffMotionDetector() {
@@ -30,6 +32,7 @@ public class DiffMotionDetector {
     }
 
     private Mat returnMask(Mat frame) {
+        backgroundDensity = 0;
         if (frame.empty()) {
             return new Mat();
         }
@@ -40,17 +43,6 @@ public class DiffMotionDetector {
         Mat threshold_image = new Mat();
 
         Imgproc.threshold(delta_image, threshold_image, threshold, 255, Imgproc.THRESH_BINARY);
-        if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
-            Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
-            if (currentMotion != null) {
-                history.add(currentMotion);
-                isObjectMoving = isObjectMoving(currentMotion);
-                last_motion = currentMotion;
-                updateBackgroundImage(currentMotion, image_gray);
-                //Rect maxRect = getMaxRect(history);
-                //updateBackgroundImage2(maxRect, image_gray);
-            }
-        }
 
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
 
@@ -61,17 +53,41 @@ public class DiffMotionDetector {
 
         Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.erode(threshold_image, threshold_image, kernelErode);
-        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
-        //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+        //Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        //Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
+        Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
-               connectivity, CvType.CV_32S);
+                connectivity, CvType.CV_32S);
+        double sum = 0;
+        for (int i = 0; i < stats.rows(); i++) {
+            sum += stats.get(i, 4)[0];
+        }
 
+        if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
+            Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
+            if (currentMotion != null) {
+                history.add(currentMotion);
+                isObjectMoving = isObjectMoving(currentMotion);
+                last_motion = currentMotion;
+                backgroundDensity = stats.get(0, 4)[0] / sum;
+                updateBackgroundImage(currentMotion, image_gray);
+                //Rect maxRect = getMaxRect(history);
+                //updateBackgroundImage2(maxRect, image_gray);
+            }
+        }
+
+        System.out.println("##### BackgroundDensity: " + backgroundDensity);
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
     }
 
     public void updateBackgroundImage(Rect currentMotion, Mat image_gray) {
+        if (backgroundDensity < 0.9) {
+            history.removeAll(history);
+            image_gray.copyTo(background_gray);
+            return;
+        }
+
         for (int i = 0; i < history.size(); i++) {
             Rect r = history.get(i);
             if (!Utils.overlaps(r, currentMotion)) {
@@ -80,6 +96,7 @@ public class DiffMotionDetector {
                 history.remove(i);
             }
         }
+
     }
 
     public void updateBackgroundImage2(Rect currentMotion, Mat image_gray) {
