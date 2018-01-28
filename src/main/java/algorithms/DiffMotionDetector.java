@@ -9,14 +9,16 @@ import java.util.List;
 
 public class DiffMotionDetector {
     Mat background_gray;
-    int threshold = 25;
+    private int threshold = 10;
     List<Rect> history = new ArrayList<>();
-    boolean isBackgroundSet = false;
-    Rect last_motion;
+    private boolean isBackgroundSet = false;
+    private Rect last_motion;
     boolean isObjectMoving = false;
-    Mat thresholdMat = new Mat();
-    boolean isCameraMoving = false;
-    double backgroundDensity = 0;
+    private Mat thresholdMat = new Mat();
+    private double backgroundDensity = 0;
+    private boolean trigger = false;
+    private int counter;
+
 
 
     public DiffMotionDetector() {
@@ -49,13 +51,13 @@ public class DiffMotionDetector {
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
-        int connectivity = 8;
+        int connectivity = 4;
 
         Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.erode(threshold_image, threshold_image, kernelErode);
-        //Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        //Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
-        Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
+        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
+        //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
                 connectivity, CvType.CV_32S);
         double sum = 0;
@@ -81,11 +83,23 @@ public class DiffMotionDetector {
         return threshold_image;
     }
 
+
     public void updateBackgroundImage(Rect currentMotion, Mat image_gray) {
-        if (backgroundDensity < 0.9) {
+        if (backgroundDensity < 0.8) {
             history.removeAll(history);
             image_gray.copyTo(background_gray);
-            return;
+            trigger = true;
+            counter = 0;
+        }
+
+        if (trigger) {
+            counter++;
+            if (counter >= 30) {
+                history.removeAll(history);
+                image_gray.copyTo(background_gray);
+                trigger = false;
+                counter = 0;
+            }
         }
 
         for (int i = 0; i < history.size(); i++) {
