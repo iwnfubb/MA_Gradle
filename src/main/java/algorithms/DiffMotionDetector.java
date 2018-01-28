@@ -14,7 +14,7 @@ public class DiffMotionDetector {
     private boolean isBackgroundSet = false;
     private Rect last_motion;
     boolean isObjectMoving = false;
-    private Mat thresholdMat = new Mat();
+    Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
