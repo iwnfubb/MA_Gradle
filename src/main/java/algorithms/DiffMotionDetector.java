@@ -21,7 +21,7 @@ public class DiffMotionDetector {
     private boolean activeShadowRemover = false;
     int movementMaximum = 75;  //amount to move to still be the same person
     int movementMinimum = 3;   //minimum amount to move to not trigger alarm
-    int movementTime = 50;     //number of frames after the alarm is triggered
+    int movementTime = 15;     //number of frames after the alarm is triggered
     Person.Persons personsList;
 
     public DiffMotionDetector() {
@@ -106,6 +106,10 @@ public class DiffMotionDetector {
             }
         }
 
+        for (Person p : personsList.persons){
+            drawImageWithRect(frame, p.rect, new Scalar(255, 0, 0));
+        }
+
 
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
@@ -125,9 +129,10 @@ public class DiffMotionDetector {
         if (trigger) {
             counter++;
             if (counter >= 30) {
-                //image_gray.copyTo(background_gray);
-                updateBackgroundImage2(currentMotion, image_gray);
+                image_gray.copyTo(background_gray);
+                //updateBackgroundImage2(currentMotion, image_gray);
                 history.removeAll(history);
+                personsList.persons.removeAll(personsList.persons);
                 trigger = false;
                 counter = 0;
             }
@@ -225,5 +230,18 @@ public class DiffMotionDetector {
             return false;
         }
         return MovingDetector.isObjectMoving(current_motion, last_motion);
+    }
+
+    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(bestRect);
+        drawRect(input, matOfRect, color);
+        return input;
+    }
+    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
+        List<Rect> rects = matOfRect.toList();
+        for (Rect r : rects) {
+            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
+        }
     }
 }

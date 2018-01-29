@@ -9,9 +9,9 @@ public class Person {
     private static int counter = 0;
 
     Rect rect;
-    int movementMaximum = 75;  //amount to move to still be the same person
-    int movementMinimum = 3;   //minimum amount to move to not trigger alarm
-    int movementTime = 50;     //number of frames after the alarm is triggered
+    int movementMaximum;  //amount to move to still be the same person
+    int movementMinimum;   //minimum amount to move to not trigger alarm
+    int movementTime;     //number of frames after the alarm is triggered
     int lastmoveTime = 0;
     int alert = 0;
     int lastseenTime = 0;

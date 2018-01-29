@@ -35,7 +35,6 @@ public class PersonDetectorAndTracking {
     DiffMotionDetector diffMotionDetector;
 
     FuzzyModel fuzzyModel;
-    int alarmCounter = 0;
 
 
     public PersonDetectorAndTracking() {
@@ -190,27 +189,12 @@ public class PersonDetectorAndTracking {
 
         Imgproc.putText(status, postureInString, new Point(status.width() / 10, status.height() / 5),
                 0, fontSCale, new Scalar(255), 2);
-        Scalar movingTextColor = new Scalar(0, 255);
-        Scalar alarmTextColor = new Scalar(0, 255);
+        Scalar movingTextColor = new Scalar(0, 255, 0);
         String text = "Moving";
         if (!moving) {
-            if (postureInString.equals("Laying")) {
-                alarmCounter++;
-            } else {
-                alarmCounter = 0;
-            }
             text = "Not Moving";
+            movingTextColor = new Scalar(0, 0, 255);
         }
-
-
-        if (alarmCounter >= 10) {
-            alarmTextColor = new Scalar(0, 0, 255);
-        } else {
-            alarmTextColor = new Scalar(0, 255, 0);
-        }
-        Imgproc.putText(status, "ALARM!!!", new Point(status.width() / 10, status.height() / 1.9),
-                0, fontSCale, alarmTextColor, 2);
-
 
         Imgproc.putText(status, text, new Point(status.width() / 10, status.height() / 3),
                 0, fontSCale, movingTextColor, 2);
