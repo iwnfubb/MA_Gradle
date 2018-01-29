@@ -279,15 +279,63 @@ public final class Utils {
     public static Mat convertImageByInvariantFeatures(Mat input) {
         Mat result = new Mat();
         input.copyTo(result);
+        double c1;
+        double c2;
+        double c3;
+        double[] pixel;
         for (int y = 0; y < result.rows(); y++)
             for (int x = 0; x < result.cols(); x++) {
                 //BGR
-                double[] pixel = result.get(y, x);
-                double c1 = Math.atan(pixel[0] / Math.max(pixel[1], pixel[2])) * 255;
-                double c2 = Math.atan(pixel[1] / Math.max(pixel[0], pixel[2])) * 255;
-                double c3 = Math.atan(pixel[2] / Math.max(pixel[0], pixel[1])) * 255;
+                pixel = result.get(y, x);
+                c1 = Math.atan(pixel[0] / Math.max(pixel[1], pixel[2])) * 255;
+                c2 = Math.atan(pixel[1] / Math.max(pixel[0], pixel[2])) * 255;
+                c3 = Math.atan(pixel[2] / Math.max(pixel[0], pixel[1])) * 255;
                 result.put(y, x, c1, c2, c3);
             }
+        return result;
+    }
+
+    public static Mat calculateInvariant(Mat input) {
+        Mat result =  new Mat();
+        input.convertTo(result, CvType.CV_32FC3);
+        ArrayList<Mat> list = new ArrayList<>();
+        Core.split(result, list);
+
+        Mat max1 = new Mat();
+        Mat b = new Mat();
+        Core.max(list.get(1), list.get(2), max1);
+        Core.divide(list.get(0), max1, b);
+
+        Mat max2 = new Mat();
+        Mat g = new Mat();
+        Core.max(list.get(0), list.get(2), max2);
+        Core.divide(list.get(1), max2, g);
+
+        Mat max3 = new Mat();
+        Mat r = new Mat();
+        Core.max(list.get(0), list.get(1), max3);
+        Core.divide(list.get(2), max3, r);
+
+        list = new ArrayList<>();
+        list.add(b);
+        list.add(g);
+        list.add(r);
+
+        result = new Mat();
+        Core.merge(list, result);
+
+        double c1;
+        double c2;
+        double c3;
+        for (int y = 0; y < result.rows(); y++)
+            for (int x = 0; x < result.cols(); x++) {
+                c1 = Math.atan(result.get(y, x)[0]);
+                c2 = Math.atan(result.get(y, x)[1]);
+                c3 = Math.atan(result.get(y, x)[2]);
+                result.put(y, x, c1, c2, c3);
+            }
+        Core.multiply(result, Scalar.all(255), result);
+        result.convertTo(result, CvType.CV_8UC3);
         return result;
     }
 

@@ -20,12 +20,12 @@ public class DiffMotionDetector {
     private int counter;
 
 
-
     public DiffMotionDetector() {
         background_gray = new Mat();
     }
 
     public void setBackground(Mat frame) {
+        Utils.calculateInvariant(frame).copyTo(frame);
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
@@ -34,11 +34,13 @@ public class DiffMotionDetector {
     }
 
     private Mat returnMask(Mat frame) {
+        long startTime = System.currentTimeMillis();
         backgroundDensity = 0;
         if (frame.empty()) {
             return new Mat();
         }
         Mat image_gray = new Mat();
+        Utils.calculateInvariant(frame).copyTo(frame);
         Imgproc.cvtColor(frame, image_gray, Imgproc.COLOR_BGR2GRAY);
         Mat delta_image = new Mat();
         Core.absdiff(background_gray, image_gray, delta_image);
@@ -79,6 +81,7 @@ public class DiffMotionDetector {
         }
 
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
+        System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
     }
@@ -95,8 +98,9 @@ public class DiffMotionDetector {
         if (trigger) {
             counter++;
             if (counter >= 30) {
+                //image_gray.copyTo(background_gray);
+                updateBackgroundImage2(currentMotion, image_gray);
                 history.removeAll(history);
-                image_gray.copyTo(background_gray);
                 trigger = false;
                 counter = 0;
             }
