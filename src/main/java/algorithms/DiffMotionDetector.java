@@ -18,6 +18,7 @@ public class DiffMotionDetector {
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
+    private boolean activeShadowRemover = true;
 
 
     public DiffMotionDetector() {
@@ -25,7 +26,9 @@ public class DiffMotionDetector {
     }
 
     public void setBackground(Mat frame) {
-        Utils.calculateInvariant(frame).copyTo(frame);
+        if (activeShadowRemover) {
+            Utils.calculateInvariant(frame).copyTo(frame);
+        }
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
@@ -40,7 +43,9 @@ public class DiffMotionDetector {
             return new Mat();
         }
         Mat image_gray = new Mat();
-        Utils.calculateInvariant(frame).copyTo(frame);
+        if (activeShadowRemover) {
+            Utils.calculateInvariant(frame).copyTo(frame);
+        }
         Imgproc.cvtColor(frame, image_gray, Imgproc.COLOR_BGR2GRAY);
         Mat delta_image = new Mat();
         Core.absdiff(background_gray, image_gray, delta_image);
