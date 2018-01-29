@@ -18,11 +18,15 @@ public class DiffMotionDetector {
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
-    private boolean activeShadowRemover = true;
-
+    private boolean activeShadowRemover = false;
+    int movementMaximum = 75;  //amount to move to still be the same person
+    int movementMinimum = 3;   //minimum amount to move to not trigger alarm
+    int movementTime = 50;     //number of frames after the alarm is triggered
+    Person.Persons personsList;
 
     public DiffMotionDetector() {
         background_gray = new Mat();
+        personsList = new Person.Persons(movementMaximum, movementMinimum, movementTime);
     }
 
     public void setBackground(Mat frame) {
@@ -72,6 +76,7 @@ public class DiffMotionDetector {
             sum += stats.get(i, 4)[0];
         }
 
+        personsList.tick();
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
             if (currentMotion != null) {
@@ -82,8 +87,25 @@ public class DiffMotionDetector {
                 updateBackgroundImage(currentMotion, image_gray);
                 //Rect maxRect = getMaxRect(history);
                 //updateBackgroundImage2(maxRect, image_gray);
+                Person person = personsList.addPerson(currentMotion);
+                Scalar color = new Scalar(0, 0, 255);
+                if (person.alert == 1) {
+                    Imgproc.line(frame, new Point(person.rect.x, person.rect.y),
+                            new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
+                            color, 2);
+                    Imgproc.line(frame, new Point(person.rect.x + person.rect.width, person.rect.y),
+                            new Point(person.rect.x, person.rect.y + person.rect.height),
+                            color, 2);
+                }
+                //Imgproc.rectangle(frame, new Point(person.rect.x, person.rect.y),
+                //        new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
+                //        new Scalar(0, 0, 255), 10);
+                Imgproc.putText(frame, person.getID() + " : " + person.lastmoveTime,
+                        new Point(person.rect.x, person.rect.y - 20),
+                        Core.FONT_HERSHEY_SIMPLEX, 2 , color, 2);
             }
         }
+
 
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));

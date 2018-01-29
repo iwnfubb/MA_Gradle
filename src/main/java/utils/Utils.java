@@ -296,7 +296,7 @@ public final class Utils {
     }
 
     public static Mat calculateInvariant(Mat input) {
-        Mat result =  new Mat();
+        Mat result = new Mat();
         input.convertTo(result, CvType.CV_32FC3);
         ArrayList<Mat> list = new ArrayList<>();
         Core.split(result, list);
@@ -324,15 +324,12 @@ public final class Utils {
         result = new Mat();
         Core.merge(list, result);
 
-        double c1;
-        double c2;
-        double c3;
+        double pixel[];
         for (int y = 0; y < result.rows(); y++)
             for (int x = 0; x < result.cols(); x++) {
-                c1 = Math.atan(result.get(y, x)[0]);
-                c2 = Math.atan(result.get(y, x)[1]);
-                c3 = Math.atan(result.get(y, x)[2]);
-                result.put(y, x, c1, c2, c3);
+                pixel = result.get(y, x);
+                result.put(y, x,
+                        Math.atan(pixel[0]), Math.atan(pixel[1]), Math.atan(pixel[2]));
             }
         Core.multiply(result, Scalar.all(255), result);
         result.convertTo(result, CvType.CV_8UC3);

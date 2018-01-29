@@ -53,7 +53,12 @@ public class BinaryMaskAnalyser {
 
         int max_area_index = getIndexOfLargest(area_array);
         MatOfPoint cnt = contours.get(max_area_index);
-        return Imgproc.boundingRect(cnt);
+        Rect rect = Imgproc.boundingRect(cnt);
+        if (rect.width * rect.height > 130*35) {
+            return Imgproc.boundingRect(cnt);
+        } else {
+            return null;
+        }
     }
 
     private static int getIndexOfLargest(double[] array) {
