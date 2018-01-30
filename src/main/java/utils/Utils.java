@@ -226,13 +226,13 @@ public final class Utils {
         }
         ArrayList<Mat> temp = new ArrayList<>();
         if (copyMat1.width() < copyMat2.width()) {
-            Mat patch = new Mat(new Size(copyMat2.width() - copyMat1.width(), copyMat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            Mat patch = new Mat(new Size(copyMat2.width() - copyMat1.width(), copyMat1.height()), CvType.CV_8UC3, Parameters.color_gray);
             temp.add(copyMat1);
             temp.add(patch);
             Core.hconcat(temp, copyMat1);
         }
         if (copyMat1.width() > copyMat2.width()) {
-            Mat patch = new Mat(new Size(copyMat1.width() - copyMat2.width(), copyMat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            Mat patch = new Mat(new Size(copyMat1.width() - copyMat2.width(), copyMat2.height()), CvType.CV_8UC3, Parameters.color_gray);
             temp.add(copyMat2);
             temp.add(patch);
             Core.hconcat(temp, copyMat2);
@@ -258,13 +258,13 @@ public final class Utils {
         }
         ArrayList<Mat> temp = new ArrayList<>();
         if (copyMat1.height() < copyMat2.height()) {
-            Mat patch = new Mat(new Size(copyMat1.width(), copyMat2.height() - copyMat1.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            Mat patch = new Mat(new Size(copyMat1.width(), copyMat2.height() - copyMat1.height()), CvType.CV_8UC3, Parameters.color_gray);
             temp.add(copyMat1);
             temp.add(patch);
             Core.vconcat(temp, copyMat1);
         }
         if (copyMat1.height() > copyMat2.height()) {
-            Mat patch = new Mat(new Size(copyMat2.width(), copyMat1.height() - copyMat2.height()), CvType.CV_8UC3, new Scalar(126, 126, 126));
+            Mat patch = new Mat(new Size(copyMat2.width(), copyMat1.height() - copyMat2.height()), CvType.CV_8UC3, Parameters.color_gray);
             temp.add(copyMat2);
             temp.add(patch);
             Core.vconcat(temp, copyMat2);

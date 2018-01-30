@@ -4,7 +4,6 @@ import imageprocess.ImageProcess_ObjectTracking;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -21,8 +20,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class NewGUIController_ObjectTracking {
-    @FXML
-    private CheckBox grabcutActive;
     @FXML
     private Slider timerbar;
     @FXML
@@ -49,11 +46,11 @@ public class NewGUIController_ObjectTracking {
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
-    private String fileName = "v_sleep2.mp4";
+    private String fileName = "v_nonstaticcam2.mp4";
     private String inputPath = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + fileName;
-    private String outputPath =Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
-    private int output_width = 1280*3;
-    private int output_height = 720*3;
+    private String outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
+    private int output_width = 1280 * 3;
+    private int output_height = 720 * 3;
     private VideoWriter writer = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
 
     /**
@@ -92,14 +89,13 @@ public class NewGUIController_ObjectTracking {
 
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
-                    Mat firstRow = new Mat();
-                    if (grabcutActive.isSelected()) {
-                        Mat[] detection = imgProcess.personDetector(originalFrame);
-                        firstRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
-                        if (detection.length == 6) {
-                            Mat secondRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
-                            firstRow = Utils.vstack(firstRow, secondRow);
-                        }
+                    Mat firstRow;
+
+                    Mat[] detection = imgProcess.personDetector(originalFrame);
+                    firstRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
+                    if (detection.length == 6) {
+                        Mat secondRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
+                        firstRow = Utils.vstack(firstRow, secondRow);
                     }
                     Image image = Utils.mat2Image(firstRow);
                     updateImageView(imageView, image);

@@ -2,6 +2,7 @@ package algorithms;
 
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import utils.Parameters;
 import utils.Utils;
 
 import java.util.ArrayList;
@@ -17,15 +18,15 @@ public class DiffMotionDetector {
     private boolean trigger = false;
     private int counter;
     private boolean activeShadowRemover = false;
-    int movementMaximum = 75;  //amount to move to still be the same person
-    int movementMinimum = 3;   //minimum amount to move to not trigger alarm
-    int movementTime = 15;     //number of frames after the alarm is triggered
+
     Person.Persons personsList;
+
 
     public DiffMotionDetector() {
         background_gray = new Mat();
-        personsList = new Person.Persons(movementMaximum, movementMinimum, movementTime);
+        personsList = new Person.Persons(Parameters.movementMaximum, Parameters.movementMinimum, Parameters.movementTime);
     }
+
 
     public void setBackground(Mat frame) {
         if (activeShadowRemover) {
@@ -34,9 +35,6 @@ public class DiffMotionDetector {
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
-    public Mat getBackground() {
-        return background_gray;
-    }
 
     private Mat returnMask(Mat frame) {
         long startTime = System.currentTimeMillis();
@@ -120,59 +118,6 @@ public class DiffMotionDetector {
 
     }
 
-    public void updateBackgroundImage2(Rect currentMotion, Mat image_gray) {
-        //Mat imageROI = new Mat(image_gray, r);
-        Rect topRect = new Rect(0, 0, image_gray.width(), currentMotion.y);
-        Mat topImage = new Mat(image_gray, topRect);
-
-        Rect bottomRect = new Rect(0, currentMotion.y + currentMotion.height,
-                image_gray.width(), image_gray.height() - (currentMotion.y + currentMotion.height));
-        Mat bottomImage = new Mat(image_gray, bottomRect);
-
-        Rect leftRect = new Rect(0, 0, currentMotion.x, image_gray.height());
-        Mat leftImage = new Mat(image_gray, leftRect);
-
-        Rect rightRect = new Rect(currentMotion.x + currentMotion.width, 0,
-                image_gray.width() - (currentMotion.x + currentMotion.width), image_gray.height());
-        Mat rightImage = new Mat(image_gray, rightRect);
-
-
-        topImage.copyTo(background_gray.rowRange(0, topImage.rows()));
-        System.out.println("top");
-        bottomImage.copyTo(background_gray.rowRange(currentMotion.y + currentMotion.height, background_gray.rows()));
-        System.out.println("bottom");
-        leftImage.copyTo(background_gray.colRange(0, leftImage.cols()));
-        System.out.println("left");
-        rightImage.copyTo(background_gray.colRange(currentMotion.x + currentMotion.width, background_gray.cols()));
-        System.out.println("right");
-    }
-
-    private Rect getMaxRect(List<Rect> list) {
-        if (list.size() > 1) {
-            int minX = 1280;
-            int minY = 720;
-            int maxX = 0;
-            int maxY = 0;
-            for (Rect r : list) {
-                if (r.x < minX) {
-                    minX = r.x;
-                }
-                if (r.x + r.width > maxX) {
-                    maxX = r.x + r.width;
-                }
-                if (r.y < minY) {
-                    minY = r.y;
-                }
-                if (r.y + r.height > maxY) {
-                    maxY = r.y + r.height;
-                }
-            }
-            return new Rect(minX, minY, maxX - minX, maxY - minY);
-        } else {
-            return new Rect(0, 0, background_gray.width(), background_gray.height());
-        }
-
-    }
 
     public Mat getDiffDetector(Mat currentFrame) {
         Mat frame = new Mat();
@@ -182,16 +127,7 @@ public class DiffMotionDetector {
                 setBackground(frame);
                 isBackgroundSet = true;
             }
-            Mat frame_mask = returnMask(frame);
-            Rect rect;
-            if (BinaryMaskAnalyser.returnNumberOfContours(frame_mask) > 0) {
-                rect = BinaryMaskAnalyser.returnMaxAreaRectangle(frame_mask);
-                if (rect != null) {
-                    Imgproc.rectangle(frame, new Point(rect.x, rect.y),
-                            new Point(rect.x + rect.width, rect.y + rect.height),
-                            new Scalar(255, 0, 0), 2);
-                }
-            }
+            returnMask(frame);
         }
         return frame;
     }

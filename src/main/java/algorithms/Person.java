@@ -7,7 +7,6 @@ import java.util.Iterator;
 
 public class Person {
     private static int counter = 0;
-
     Rect rect;
     int movementMaximum;  //amount to move to still be the same person
     int movementMinimum;   //minimum amount to move to not trigger alarm

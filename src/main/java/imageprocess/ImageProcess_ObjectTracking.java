@@ -23,6 +23,7 @@ import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.xfeatures2d.SURF;
 import utils.KeyPointsAndFeaturesVector;
+import utils.Parameters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -150,11 +151,11 @@ public class ImageProcess_ObjectTracking {
                     Imgproc.line(copyOfOriginal,
                             new Point(x, y),
                             new Point(Math.round(x + flowatx), Math.round(y + flowaty)),
-                            new Scalar(0, 255, 0, 0));
+                            Parameters.color_green);
                     Imgproc.circle(copyOfOriginal,
                             new Point(x, y),
                             2,
-                            new Scalar(0, 0, 0, 0), -2, 4, 0);
+                            Parameters.color_black, -2, 4, 0);
                 }
             img.copyTo(prevgray);
         } else {
@@ -176,11 +177,11 @@ public class ImageProcess_ObjectTracking {
                     Imgproc.line(copyOfOriginal,
                             new Point(x, y),
                             new Point(Math.round(x + flowatx), Math.round(y + flowaty)),
-                            new Scalar(0, 255, 0, 0));
+                            Parameters.color_green);
                     Imgproc.circle(copyOfOriginal,
                             new Point(x, y),
                             2,
-                            new Scalar(0, 0, 0, 0), -2, 4, 0);
+                            Parameters.color_black, -2, 4, 0);
                 }
         }
         return copyOfOriginal;
@@ -220,11 +221,11 @@ public class ImageProcess_ObjectTracking {
                 Instance instance = cluster[i].get(index);
                 Scalar scalar;
                 if (i == 0) {
-                    scalar = new Scalar(0, 255, 0, 0);
+                    scalar = Parameters.color_green;
                 } else if (i == 1) {
-                    scalar = new Scalar(0, 0, 255, 0);
+                    scalar = Parameters.color_red;
                 } else {
-                    scalar = new Scalar(255, 0, 0, 0);
+                    scalar = Parameters.color_blue;
                 }
                 Imgproc.circle(copyOfOriginal,
                         new Point((int) instance.value(1), (int) instance.value(2)),
@@ -270,11 +271,11 @@ public class ImageProcess_ObjectTracking {
             KeyPoint keyPoint = keyPoints.get(i);
             Scalar scalar;
             if (labels.get(i, 0)[0] == 0) {
-                scalar = new Scalar(255, 0, 0, 0);
+                scalar = Parameters.color_blue;
             } else if (labels.get(i, 0)[0] == 1) {
-                scalar = new Scalar(0, 255, 0, 0);
+                scalar = Parameters.color_green;
             } else {
-                scalar = new Scalar(0, 0, 255, 0);
+                scalar = Parameters.color_red;
             }
             Imgproc.circle(copyOfOriginal,
                     new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
@@ -320,11 +321,11 @@ public class ImageProcess_ObjectTracking {
             KeyPoint keyPoint = keyPoints.get(i);
             Scalar scalar;
             if (labels.get(i, 0)[0] == 0) {
-                scalar = new Scalar(255, 0, 0, 0);
+                scalar = Parameters.color_blue;
             } else if (labels.get(i, 0)[0] == 1) {
-                scalar = new Scalar(0, 255, 0, 0);
+                scalar = Parameters.color_green;
             } else {
-                scalar = new Scalar(0, 0, 255, 0);
+                scalar = Parameters.color_red;
             }
             Imgproc.circle(copyOfOriginal,
                     new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
@@ -366,11 +367,11 @@ public class ImageProcess_ObjectTracking {
             KeyPoint keyPoint = keyPoints.get(i);
             Scalar scalar;
             if (labels.get(i, 0)[0] == 0) {
-                scalar = new Scalar(255, 0, 0, 0);
+                scalar = Parameters.color_blue;
             } else if (labels.get(i, 0)[0] == 1) {
-                scalar = new Scalar(0, 255, 0, 0);
+                scalar = Parameters.color_green;
             } else {
-                scalar = new Scalar(0, 0, 255, 0);
+                scalar = Parameters.color_red;
             }
             Imgproc.circle(copyOfOriginal,
                     new Point((int) keyPoint.pt.x, (int) keyPoint.pt.y),
@@ -514,7 +515,7 @@ public class ImageProcess_ObjectTracking {
     }
 
     public Mat[] personDetector(Mat input) {
-        return personDetectorAndTracking.detect4(input);
+        return personDetectorAndTracking.detection(input);
     }
 
 
@@ -539,9 +540,9 @@ public class ImageProcess_ObjectTracking {
         //Dataset[] cluster = myOptics.cluster(data);
         Dataset[] cluster = new Dataset[0];
         Scalar[] colors = new Scalar[]{
-                new Scalar(255, 0, 0, 0),
-                new Scalar(0, 255, 0, 0),
-                new Scalar(0, 0, 255, 0),
+                Parameters.color_blue,
+                Parameters.color_green,
+                Parameters.color_red,
                 new Scalar(255, 255, 0, 0),
                 new Scalar(0, 255, 255, 0)};
         maskOnBackgroundModel = Clustering.drawClusters(maskOnBackgroundModel, cluster, colors);
@@ -583,7 +584,7 @@ public class ImageProcess_ObjectTracking {
                 Imgproc.circle(copyOfOriginal,
                         new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
                         5,
-                        new Scalar(0, 0, 0), -5, 4, 0);
+                        Parameters.color_black, -5, 4, 0);
             }
         }
 
@@ -592,7 +593,7 @@ public class ImageProcess_ObjectTracking {
                 Imgproc.circle(copyOfOriginal,
                         new Point((int) keyPointsListBackground.get(i).pt.x, (int) keyPointsListBackground.get(i).pt.y),
                         5,
-                        new Scalar(255, 255, 255), -5, 4, 0);
+                        Parameters.color_white, -5, 4, 0);
             }
         }
         return copyOfOriginal;
@@ -620,7 +621,7 @@ public class ImageProcess_ObjectTracking {
             Imgproc.line(image,
                     new Point(keyPointTrain.pt.x, keyPointTrain.pt.y),
                     new Point(keyPointQuery.pt.x, keyPointQuery.pt.y),
-                    new Scalar(0, 255, 0, 0));
+                    Parameters.color_green);
             //update new position for background model
             backgroundModelTobi.getMatOfKeyPoint().put(dMatch.trainIdx, 0,
                     keyPointQuery.pt.x, keyPointQuery.pt.y,
@@ -719,7 +720,7 @@ public class ImageProcess_ObjectTracking {
                     Imgproc.circle(newImg,
                             new Point(x, y),
                             5,
-                            new Scalar(255, 255, 255), -5, 4, 0);
+                            Parameters.color_white, -5, 4, 0);
                 }
             }
         return newImg;

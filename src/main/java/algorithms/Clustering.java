@@ -8,6 +8,7 @@ import net.sf.javaml.core.Instance;
 import net.sf.javaml.core.SparseInstance;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import utils.Parameters;
 
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class Clustering {
         for (int i = 0; i < cluster.length; i++) {
             for (int index = 0; index < cluster[i].size(); index++) {
                 Instance instance = cluster[i].get(index);
-                Scalar scalar = new Scalar(255, 255, 255, 0);
+                Scalar scalar = Parameters.color_white;
                 if (i < colors.length) {
                     scalar = colors[i];
                 }

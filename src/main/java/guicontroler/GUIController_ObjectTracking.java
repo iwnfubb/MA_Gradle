@@ -15,6 +15,7 @@ import org.opencv.core.Scalar;
 import org.opencv.features2d.Features2d;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
+import utils.Parameters;
 import utils.Utils;
 
 import java.util.concurrent.Executors;
@@ -130,7 +131,7 @@ public class GUIController_ObjectTracking {
                     if (surfImgActive.isSelected() && !gaussianBlurFrame.empty()) {
                         Mat surfImg = new Mat();
                         surfKeyPoint = imgProcess.getSURFKeyPoint(gaussianBlurFrame, new Mat());
-                        Features2d.drawKeypoints(gaussianBlurFrame, surfKeyPoint, surfImg, new Scalar(0, 0, 255, 0), 4);
+                        Features2d.drawKeypoints(gaussianBlurFrame, surfKeyPoint, surfImg, Parameters.color_red, 4);
                         Image mmgImageToShow = Utils.mat2Image(surfImg);
                         updateImageView(surfImgView, mmgImageToShow);
                     }
