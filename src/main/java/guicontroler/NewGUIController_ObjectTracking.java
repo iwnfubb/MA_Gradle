@@ -3,6 +3,7 @@ package guicontroler;
 import imageprocess.ImageProcess_ObjectTracking;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
@@ -12,9 +13,14 @@ import org.opencv.core.Size;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
+import utils.CSVWriter;
+import utils.EvaluationValue;
 import utils.Utils;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +52,15 @@ public class NewGUIController_ObjectTracking {
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
-    private String fileName = "v_nonstaticcam2.mp4";
+    private String fileName = "v_dead2.mp4";
     private String inputPath = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + fileName;
-    private String outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "vo_" + timestamp.getTime() + fileName;
+    private long timeStamp = timestamp.getTime();
+    private String outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow_" + fileName;
     private int output_width = 1280 * 3;
     private int output_height = 720 * 3;
-    private VideoWriter writer = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
+    private VideoWriter videoWriter = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
+    FileWriter fileWriter;
+    ArrayList<EvaluationValue> list = new ArrayList<>();
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -75,6 +84,7 @@ public class NewGUIController_ObjectTracking {
             // is the video stream available?
             if (this.capture.isOpened()) {
                 this.cameraActive = true;
+                createCVSFile();
 
                 Runnable frameGrabber = () -> {
                     if (!liveVideo) {
@@ -86,7 +96,7 @@ public class NewGUIController_ObjectTracking {
                             trigger = false;
                         }
                     }
-
+                    imgProcess.personDetectorAndTracking.frame_number = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
                     Mat firstRow;
@@ -100,7 +110,7 @@ public class NewGUIController_ObjectTracking {
                     Image image = Utils.mat2Image(firstRow);
                     updateImageView(imageView, image);
                     Mat output = Utils.rescaleImageToDisplay(firstRow, output_width, output_height);
-                    writer.write(output);
+                    videoWriter.write(output);
                 };
 
                 this.timer = Executors.newSingleThreadScheduledExecutor();
@@ -139,6 +149,7 @@ public class NewGUIController_ObjectTracking {
     private void stopAcquisition() {
         if (this.timer != null && !this.timer.isShutdown()) {
             try {
+                save();
                 // stop the timer
                 this.timer.shutdown();
                 this.timer.awaitTermination(33, TimeUnit.MILLISECONDS);
@@ -151,7 +162,7 @@ public class NewGUIController_ObjectTracking {
         if (this.capture.isOpened()) {
             // release the camera
             this.capture.release();
-            writer.release();
+            videoWriter.release();
         }
     }
 
@@ -176,4 +187,42 @@ public class NewGUIController_ObjectTracking {
         }
     }
 
+
+    private void createCVSFile() {
+        String fileNameWithoutExt = fileName;
+        if (fileNameWithoutExt.indexOf(".") > 0)
+            fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
+        String csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + ".csv";
+        try {
+            fileWriter = new FileWriter(csvFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        for (int i = 0; i < this.capture.get(Videoio.CAP_PROP_FRAME_COUNT); i++) {
+            EvaluationValue evaluationValue = new EvaluationValue();
+            evaluationValue.setFrame_number((i + 1) + "");
+            list.add(evaluationValue);
+        }
+        imgProcess.personDetectorAndTracking.list = this.list;
+    }
+
+    private void save() {
+        try {
+            for (int i = 0; i < list.size(); i++) {
+                CSVWriter.writeLine(fileWriter, list.get(i).toCSVFormat());
+            }
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Information Dialog");
+            alert.setHeaderText("Look, an Information Dialog");
+            alert.setContentText("Save done!");
+
+            alert.showAndWait();
+            fileWriter.flush();
+            fileWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NullPointerException ex) {
+        }
+    }
 }

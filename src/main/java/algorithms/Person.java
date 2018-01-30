@@ -57,7 +57,7 @@ public class Person {
     public void tick() {
         lastmoveTime += 1;
         lastseenTime += 1;
-        if (lastmoveTime > movementTime && posture == "Laying" && bad_prediction > 0.8) {
+        if (lastmoveTime > movementTime && posture == "laying" && bad_prediction > 0.8) {
             alert = true;
         }
         if (lastseenTime > 4) {

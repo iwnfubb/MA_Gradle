@@ -161,16 +161,16 @@ public class PostureDetector {
     public String getStatusInString(int index) {
         String str = "";
         if (index == 0) {
-            str = "Standing";
+            str = "standing";
         }
         if (index == 1) {
-            str = "Laying";
+            str = "laying";
         }
         if (index == 2) {
-            str = "Bending";
+            str = "bending";
         }
         if (index == 3) {
-            str = "Sitting";
+            str = "sitting";
         }
         return str;
     }

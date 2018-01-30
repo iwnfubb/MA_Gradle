@@ -2,9 +2,11 @@ package algorithms;
 
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import utils.EvaluationValue;
 import utils.Parameters;
 import utils.Utils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class PersonDetectorAndTracking {
@@ -15,6 +17,8 @@ public class PersonDetectorAndTracking {
     DiffMotionDetector diffMotionDetector;
 
     FuzzyModel fuzzyModel;
+    public ArrayList<EvaluationValue> list;
+    public int frame_number = 0;
 
     public PersonDetectorAndTracking() {
         postureDetector = new PostureDetector();
@@ -60,9 +64,9 @@ public class PersonDetectorAndTracking {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             Point center = Utils.getCenter(current_rect);
             Person person = diffMotionDetector.personsList.addPerson(current_rect);
-            String text = "Moving";
+            String moving = "moving";
             if (person.lastmoveTime != 0) {
-                text = "Not Moving";
+                moving = "not_moving";
             }
             double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
             Scalar color = Parameters.color_red;
@@ -86,7 +90,15 @@ public class PersonDetectorAndTracking {
             }
 
             drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
-            writeInfo(status, center.toString(), postureInString, text, evaluate);
+            list.get(frame_number).setPerson_there("true");
+            list.get(frame_number).setPosture(postureInString);
+            list.get(frame_number).setIsMoving(moving);
+            if (person.alert)
+                list.get(frame_number).setStatus("not_ok");
+            else
+                list.get(frame_number).setStatus("ok");
+
+            writeInfo(status, center.toString(), postureInString, moving, evaluate);
         }
 
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
