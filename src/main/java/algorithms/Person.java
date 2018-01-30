@@ -17,6 +17,9 @@ public class Person {
     int lastseenTime = 0;
     int remove = 0;
     int id = counter++;
+    String posture;
+    double bad_prediction;
+    double good_prediction;
 
     public Person(Rect rect, int movementMaximum, int movementMinimum, int movementTime) {
         this.rect = rect;
@@ -35,6 +38,7 @@ public class Person {
     }
 
     public void editPerson(Rect rect) {
+        //if (MovingDetector.isObjectMoving(rect, this.rect))
         if (Math.abs(rect.x - this.rect.x) > movementMinimum ||
                 Math.abs(rect.y - this.rect.y) > movementMinimum ||
                 Math.abs(rect.width - this.rect.width) > movementMinimum ||
@@ -53,7 +57,7 @@ public class Person {
     public void tick() {
         lastmoveTime += 1;
         lastseenTime += 1;
-        if (lastmoveTime > movementTime) {
+        if (lastmoveTime > movementTime && posture == "Laying" && bad_prediction > 0.8) {
             alert = 1;
         }
         if (lastseenTime > 4) {

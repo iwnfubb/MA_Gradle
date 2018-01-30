@@ -1,6 +1,7 @@
 package algorithms;
 
 import org.opencv.core.*;
+import org.opencv.core.Point;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.imgproc.Imgproc;
@@ -9,6 +10,7 @@ import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.Video;
 import utils.Utils;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -23,7 +25,6 @@ public class PersonDetectorAndTracking {
     PostureDetector postureDetector;
     MovingDetector movingDetector;
     boolean tracking = false;
-    Rect last_rect = new Rect();
 
     //HOG Parameter
     double hitThreshold = 0;
@@ -167,17 +168,17 @@ public class PersonDetectorAndTracking {
 
     public Mat[] detect4(Mat input) {
         /*Using Diff Detector*/
-        int fontSCale = 2;
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
         Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
         Mat binary_mat = diffMotionDetector.thresholdMat;
 
+        diffMotionDetector.personsList.tick();
+
         Mat imageROI = new Mat();
         if (diffMotionDetector.history.size() != 0) {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             imageROI = new Mat(binary_mat, current_rect);
-            drawImageWithRect(diff_mark, current_rect, new Scalar(0, 255, 0));
         } else {
             binary_mat.copyTo(imageROI);
         }
@@ -185,40 +186,65 @@ public class PersonDetectorAndTracking {
         Mat status = new Mat(input.size(), CvType.CV_8UC3, Scalar.all(126));
         int posture = postureDetector.detect(imageROI);
         String postureInString = postureDetector.getStatusInString(posture);
-        boolean moving = diffMotionDetector.isObjectMoving;
-
-        Imgproc.putText(status, postureInString, new Point(status.width() / 10, status.height() / 5),
-                0, fontSCale, new Scalar(255), 2);
-        Scalar movingTextColor = new Scalar(0, 255, 0);
-        String text = "Moving";
-        if (!moving) {
-            text = "Not Moving";
-            movingTextColor = new Scalar(0, 0, 255);
-        }
-
-        Imgproc.putText(status, text, new Point(status.width() / 10, status.height() / 3),
-                0, fontSCale, movingTextColor, 2);
 
         if (diffMotionDetector.history.size() != 0) {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             Point center = Utils.getCenter(current_rect);
-            log(center.toString());
-            String[] evaluate = fuzzyModel.evaluate(posture, 2, center.x, center.y);
-            Scalar statusColor = new Scalar(0, 0, 0);
-            Imgproc.putText(status, evaluate[0], new Point(status.width() / 10, status.height() / 2),
-                    0, fontSCale, statusColor, 2);
-            Imgproc.putText(status, evaluate[1], new Point(status.width() / 10, status.height() / 1.5),
-                    0, fontSCale, statusColor, 2);
-            Imgproc.putText(status, evaluate[2], new Point(status.width() / 10, status.height() / 1.7),
-                    0, fontSCale, statusColor, 2);
+            Person person = diffMotionDetector.personsList.addPerson(current_rect);
+            String text = "Moving";
+            if (person.lastmoveTime != 0) {
+                text = "Not Moving";
+            }
+            double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
+            Scalar color = new Scalar(0, 0, 255);
+            person.posture = postureInString;
+            person.bad_prediction = evaluate[1];
+            person.good_prediction = evaluate[2];
+            if (person.alert == 1) {
+                Imgproc.line(diff_mark, new Point(person.rect.x, person.rect.y),
+                        new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
+                        color, 2);
+                Imgproc.line(diff_mark, new Point(person.rect.x + person.rect.width, person.rect.y),
+                        new Point(person.rect.x, person.rect.y + person.rect.height),
+                        color, 2);
+            }
+            Imgproc.putText(diff_mark, person.getID() + " : " + person.lastmoveTime,
+                    new Point(person.rect.x, person.rect.y - 20),
+                    Core.FONT_HERSHEY_SIMPLEX, 2, color, 2);
 
+            for (Person p : diffMotionDetector.personsList.persons) {
+                drawImageWithRect(diff_mark, p.rect, new Scalar(255, 0, 0));
+            }
+
+            drawImageWithRect(diff_mark, current_rect, new Scalar(0, 255, 0));
+            writeInfo(status, center.toString(), postureInString, text, evaluate);
         }
 
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
-
         return new Mat[]{input, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
+    }
+
+    private void writeInfo (Mat mat, String position, String posture, String moving, double[] evaluation){
+        int fontScale =2;
+        Imgproc.putText(mat, position, new Point(mat.width() / 10, mat.height() / 7),
+                0, fontScale, new Scalar(0), 2);
+        Imgproc.putText(mat, posture, new Point(mat.width() / 10, mat.height() / 7 * 2),
+                0, fontScale, new Scalar(255), 2);
+        Scalar movingTextColor = new Scalar(0, 255, 0);
+        if (!moving.equals("Moving")) {
+            movingTextColor = new Scalar(0, 0, 255);
+        }
+        Imgproc.putText(mat, moving, new Point(mat.width() / 10, mat.height() / 7 * 3),
+                0, fontScale, movingTextColor, 2);
+        Scalar statusColor = new Scalar(0, 0, 0);
+        Imgproc.putText(mat, "Value: " + evaluation[0], new Point(mat.width() / 10, mat.height() / 7 * 4),
+                0, fontScale, statusColor, 2);
+        Imgproc.putText(mat, "Bad:" + evaluation[1], new Point(mat.width() / 10, mat.height() / 7 * 5),
+                0, fontScale, statusColor, 2);
+        Imgproc.putText(mat, "Good:" + evaluation[2], new Point(mat.width() / 10, mat.height() / 7 * 6),
+                0, fontScale, statusColor, 2);
     }
 
     public Mat[] detect3(Mat input) {

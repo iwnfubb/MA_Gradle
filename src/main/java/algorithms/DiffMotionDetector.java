@@ -12,8 +12,6 @@ public class DiffMotionDetector {
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
     private boolean isBackgroundSet = false;
-    private Rect last_motion;
-    boolean isObjectMoving = false;
     Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
     private boolean trigger = false;
@@ -76,41 +74,14 @@ public class DiffMotionDetector {
             sum += stats.get(i, 4)[0];
         }
 
-        personsList.tick();
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
             if (currentMotion != null) {
                 history.add(currentMotion);
-                isObjectMoving = isObjectMoving(currentMotion);
-                last_motion = currentMotion;
                 backgroundDensity = stats.get(0, 4)[0] / sum;
                 updateBackgroundImage(currentMotion, image_gray);
-                //Rect maxRect = getMaxRect(history);
-                //updateBackgroundImage2(maxRect, image_gray);
-                Person person = personsList.addPerson(currentMotion);
-                Scalar color = new Scalar(0, 0, 255);
-                if (person.alert == 1) {
-                    Imgproc.line(frame, new Point(person.rect.x, person.rect.y),
-                            new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
-                            color, 2);
-                    Imgproc.line(frame, new Point(person.rect.x + person.rect.width, person.rect.y),
-                            new Point(person.rect.x, person.rect.y + person.rect.height),
-                            color, 2);
-                }
-                //Imgproc.rectangle(frame, new Point(person.rect.x, person.rect.y),
-                //        new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
-                //        new Scalar(0, 0, 255), 10);
-                Imgproc.putText(frame, person.getID() + " : " + person.lastmoveTime,
-                        new Point(person.rect.x, person.rect.y - 20),
-                        Core.FONT_HERSHEY_SIMPLEX, 2 , color, 2);
             }
         }
-
-        for (Person p : personsList.persons){
-            drawImageWithRect(frame, p.rect, new Scalar(255, 0, 0));
-        }
-
-
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         threshold_image.copyTo(thresholdMat);
@@ -223,25 +194,5 @@ public class DiffMotionDetector {
             }
         }
         return frame;
-    }
-
-    public boolean isObjectMoving(Rect current_motion) {
-        if (last_motion == null) {
-            return false;
-        }
-        return MovingDetector.isObjectMoving(current_motion, last_motion);
-    }
-
-    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
-        MatOfRect matOfRect = new MatOfRect();
-        matOfRect.fromArray(bestRect);
-        drawRect(input, matOfRect, color);
-        return input;
-    }
-    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
-        List<Rect> rects = matOfRect.toList();
-        for (Rect r : rects) {
-            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
-        }
     }
 }
