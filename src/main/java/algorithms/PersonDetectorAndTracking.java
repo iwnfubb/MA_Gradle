@@ -1,6 +1,5 @@
 package algorithms;
 
-import net.sourceforge.jFuzzyLogic.optimization.Parameter;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import utils.Parameters;
@@ -70,7 +69,7 @@ public class PersonDetectorAndTracking {
             person.posture = postureInString;
             person.bad_prediction = evaluate[1];
             person.good_prediction = evaluate[2];
-            if (person.alert == 1) {
+            if (person.alert) {
                 Imgproc.line(diff_mark, new Point(person.rect.x, person.rect.y),
                         new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
                         color, 2);

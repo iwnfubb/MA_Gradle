@@ -12,10 +12,11 @@ public class Person {
     int movementMinimum;   //minimum amount to move to not trigger alarm
     int movementTime;     //number of frames after the alarm is triggered
     int lastmoveTime = 0;
-    int alert = 0;
     int lastseenTime = 0;
-    int remove = 0;
     int id = counter++;
+
+    boolean alert;
+    boolean remove;
     String posture;
     double bad_prediction;
     double good_prediction;
@@ -57,18 +58,18 @@ public class Person {
         lastmoveTime += 1;
         lastseenTime += 1;
         if (lastmoveTime > movementTime && posture == "Laying" && bad_prediction > 0.8) {
-            alert = 1;
+            alert = true;
         }
         if (lastseenTime > 4) {
-            remove = 1;
+            remove = true;
         }
     }
 
-    public int getAlert() {
+    public boolean getAlert() {
         return alert;
     }
 
-    public int getRemove() {
+    public boolean getRemove() {
         return remove;
     }
 
@@ -110,7 +111,7 @@ public class Person {
             while (iterator.hasNext()) {
                 Person p = iterator.next();
                 p.tick();
-                if (p.getRemove() == 1) {
+                if (p.getRemove()) {
                     iterator.remove();
                 }
             }
