@@ -17,7 +17,7 @@ public class DiffMotionDetector {
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
-    private boolean activeShadowRemover = false;
+    private boolean activeShadowRemover = true;
 
     Person.Persons personsList;
 
@@ -88,7 +88,7 @@ public class DiffMotionDetector {
 
 
     public void updateBackgroundImage(Rect currentMotion, Mat image_gray) {
-        if (backgroundDensity < 0.8) {
+        if (backgroundDensity < 0.9) {
             history.removeAll(history);
             image_gray.copyTo(background_gray);
             trigger = true;

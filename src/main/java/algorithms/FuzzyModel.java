@@ -10,7 +10,7 @@ public class FuzzyModel {
     FunctionBlock fb;
 
     public FuzzyModel() {
-        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "tipper.fcl";
+        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "sleep.fcl";
         FIS fis = FIS.load(filename, true);
 
         if (fis == null) {
