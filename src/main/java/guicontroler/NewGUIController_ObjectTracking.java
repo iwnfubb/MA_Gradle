@@ -84,7 +84,9 @@ public class NewGUIController_ObjectTracking {
             // is the video stream available?
             if (this.capture.isOpened()) {
                 this.cameraActive = true;
-                createCVSFile();
+                if (!liveVideo) {
+                    createCVSFile();
+                }
 
                 Runnable frameGrabber = () -> {
                     if (!liveVideo) {
@@ -149,7 +151,9 @@ public class NewGUIController_ObjectTracking {
     private void stopAcquisition() {
         if (this.timer != null && !this.timer.isShutdown()) {
             try {
-                save();
+                if (!liveVideo) {
+                    save();
+                }
                 // stop the timer
                 this.timer.shutdown();
                 this.timer.awaitTermination(33, TimeUnit.MILLISECONDS);
@@ -190,8 +194,9 @@ public class NewGUIController_ObjectTracking {
 
     private void createCVSFile() {
         String fileNameWithoutExt = fileName;
-        if (fileNameWithoutExt.indexOf(".") > 0)
+        if (fileNameWithoutExt.indexOf(".") > 0) {
             fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
+        }
         String csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + ".csv";
         try {
             fileWriter = new FileWriter(csvFile);
