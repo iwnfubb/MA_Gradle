@@ -52,13 +52,13 @@ public class NewGUIController_ObjectTracking {
     public static int frameCounter = 0;
     private Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
-    private String fileName = "v_dead2.mp4";
+    private String fileName = "v_fallen2.mp4";
     private String inputPath = Utils.PATH_TO_VIDEOS_INPUT_FOLDER + fileName;
     private long timeStamp = timestamp.getTime();
-    private String outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow_" + fileName;
+    private String outputPath;
     private int output_width = 1280 * 3;
     private int output_height = 720 * 3;
-    private VideoWriter videoWriter = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
+    private VideoWriter videoWriter;
     FileWriter fileWriter;
     ArrayList<EvaluationValue> list = new ArrayList<>();
 
@@ -69,7 +69,13 @@ public class NewGUIController_ObjectTracking {
      */
     @FXML
     protected void startCamera(ActionEvent event) {
+        if (Utils.activeShadowRemover) {
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow" + fileName;
+        } else {
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_" + fileName;
+        }
 
+        videoWriter = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
 
         frameCounter = 0;
         if (!this.cameraActive) {
@@ -197,7 +203,12 @@ public class NewGUIController_ObjectTracking {
         if (fileNameWithoutExt.indexOf(".") > 0) {
             fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
         }
-        String csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + ".csv";
+        String csvFile;
+        if (Utils.activeShadowRemover) {
+            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + "_noshadow.csv";
+        } else {
+            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + ".csv";
+        }
         try {
             fileWriter = new FileWriter(csvFile);
         } catch (IOException e) {

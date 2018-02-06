@@ -17,7 +17,6 @@ public class DiffMotionDetector {
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
-    private boolean activeShadowRemover = true;
 
     Person.Persons personsList;
 
@@ -29,7 +28,7 @@ public class DiffMotionDetector {
 
 
     public void setBackground(Mat frame) {
-        if (activeShadowRemover) {
+        if (Utils.activeShadowRemover) {
             Utils.calculateInvariant(frame).copyTo(frame);
         }
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
@@ -43,7 +42,7 @@ public class DiffMotionDetector {
             return new Mat();
         }
         Mat image_gray = new Mat();
-        if (activeShadowRemover) {
+        if (Utils.activeShadowRemover) {
             Utils.calculateInvariant(frame).copyTo(frame);
         }
         Imgproc.cvtColor(frame, image_gray, Imgproc.COLOR_BGR2GRAY);

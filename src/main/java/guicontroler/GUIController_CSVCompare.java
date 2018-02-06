@@ -7,9 +7,9 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-import org.knowm.xchart.QuickChart;
-import org.knowm.xchart.SwingWrapper;
-import org.knowm.xchart.XYChart;
+import org.knowm.xchart.*;
+import org.knowm.xchart.style.Styler;
+import org.knowm.xchart.style.markers.SeriesMarkers;
 import utils.CSVReaderEvaluation;
 import utils.EvaluationValue;
 import utils.Utils;
@@ -63,9 +63,25 @@ public class GUIController_CSVCompare {
                 }
                 frame[i] = i + 1;
             }
+
+            // Create Chart
+            XYChart chart = new XYChartBuilder().width(800).height(600).title(getClass().getSimpleName()).xAxisTitle("Frame").yAxisTitle("Posture").build();
+
+            // Customize Chart
+            chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
+            chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
+            chart.getStyler().setYAxisLabelAlignment(Styler.TextAlignment.Right);
+            chart.getStyler().setYAxisDecimalPattern("$ #,###.##");
+            chart.getStyler().setPlotMargin(0);
+            chart.getStyler().setPlotContentSize(.95);
+
             String titel = ("True: " + counter + " from: " + values1.size() + " Quote: " + (double) counter / (double) values1.size());
-            XYChart chart = QuickChart.getChart(titel, "Frame", "Posture", "real", frame, v1);
-            chart.addSeries("test", frame, v2);
+            chart.setTitle(titel);
+            XYSeries real = chart.addSeries("real", frame, v1);
+            real.setMarker(SeriesMarkers.NONE);
+            XYSeries test = chart.addSeries("test", frame, v2);
+            test.setMarker(SeriesMarkers.NONE);
+
             // Show it
             new SwingWrapper(chart).displayChart();
         }
