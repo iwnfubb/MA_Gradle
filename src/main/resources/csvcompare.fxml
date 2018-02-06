@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.*?>
+
+<GridPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="96.0" prefWidth="613.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="guicontroler.GUIController_CSVCompare">
+    <columnConstraints>
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints maxHeight="77.0" minHeight="8.0" prefHeight="36.0" vgrow="SOMETIMES" />
+        <RowConstraints maxHeight="126.0" minHeight="0.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        <RowConstraints maxHeight="362.0" minHeight="10.0" prefHeight="31.0" vgrow="SOMETIMES" />
+    </rowConstraints>
+    <children>
+        <Button fx:id="open1" mnemonicParsing="false" onAction="#openCSVData1" text="open CSV Data 1" GridPane.rowIndex="1" />
+        <Button fx:id="open2" mnemonicParsing="false" onAction="#openCSVData2" text="open CSV Data 2" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <Button mnemonicParsing="false" onAction="#compare" text="Compare" GridPane.rowIndex="2" />
+      <Label fx:id="path1" prefHeight="31.0" prefWidth="306.0" />
+      <Label fx:id="path2" prefHeight="34.0" prefWidth="303.0" GridPane.columnIndex="1" />
+    </children>
+</GridPane>

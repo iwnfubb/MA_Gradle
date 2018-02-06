@@ -1,5 +1,7 @@
 package utils;
 
+import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class AverageHistogram {
@@ -25,49 +27,65 @@ public class AverageHistogram {
     }
 
     private void iniVertical_standing() {
-        CVSReader reader = new CVSReader("v_standing.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "v_standing.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         vertical_standing = reader.getValues();
     }
 
     private void iniVertical_bending() {
-        CVSReader reader = new CVSReader("v_bending.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "v_bending.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         vertical_bending = reader.getValues();
     }
 
     private void iniVertical_laying() {
-        CVSReader reader = new CVSReader("v_laying.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "v_laying.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         vertical_laying = reader.getValues();
     }
 
     private void iniVertical_sitting() {
-        CVSReader reader = new CVSReader("v_sitting.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "v_sitting.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         vertical_sitting = reader.getValues();
     }
 
     private void iniHorizontal_standing() {
-        CVSReader reader = new CVSReader("h_standing.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "h_standing.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         horizontal_standing = reader.getValues();
     }
 
     private void iniHorizontal_bending() {
-        CVSReader reader = new CVSReader("h_bending.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "h_bending.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         horizontal_bending = reader.getValues();
     }
 
     private void iniHorizontal_laying() {
-        CVSReader reader = new CVSReader("h_laying.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "h_laying.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         horizontal_laying = reader.getValues();
     }
 
     private void iniHorizontal_sitting() {
-        CVSReader reader = new CVSReader("h_sitting.csv", ";");
+        URL url = getClass().getResource("../../resources/" + "h_sitting.csv");
+        File file = new File(url.getPath());
+        CSVReaderHistogram reader = new CSVReaderHistogram(file, ";");
         reader.read();
         horizontal_sitting = reader.getValues();
     }

@@ -24,6 +24,10 @@ public class EvaluationValue {
         return frame_number;
     }
 
+    public double getFrame_number_in_double() {
+        return Double.parseDouble(frame_number);
+    }
+
     public void setFrame_number(String frame_number) {
         this.frame_number = frame_number;
     }
@@ -40,12 +44,32 @@ public class EvaluationValue {
         return person_there;
     }
 
+    public boolean getPerson_there_in_boolean() {
+        return Boolean.parseBoolean(person_there);
+    }
+
     public void setPerson_there(String person_there) {
         this.person_there = person_there;
     }
 
     public String getPosture() {
         return posture;
+    }
+
+    public double getPosture_in_double() {
+        if (posture.equals("standing")) {
+            return 0;
+        }
+        if (posture.equals("laying")) {
+            return 1;
+        }
+        if (posture.equals("bending")) {
+            return 2;
+        }
+        if (posture.equals("sitting")) {
+            return 3;
+        }
+        return -1;
     }
 
     public void setPosture(String posture) {
@@ -56,6 +80,13 @@ public class EvaluationValue {
         return isMoving;
     }
 
+    public boolean getIsMoving_in_boolean() {
+        if (isMoving.equals("moving")) {
+            return true;
+        }
+        return false;
+    }
+
     public void setIsMoving(String isMoving) {
         this.isMoving = isMoving;
     }
@@ -63,6 +94,14 @@ public class EvaluationValue {
     public String getStatus() {
         return status;
     }
+
+    public boolean getStatusIsOk_in_boolean() {
+        if (status.equals("ok")) {
+            return true;
+        }
+        return false;
+    }
+
 
     public void setStatus(String status) {
         this.status = status;
@@ -82,4 +121,6 @@ public class EvaluationValue {
             return Arrays.asList(frame_number);
         }
     }
+
+
 }
