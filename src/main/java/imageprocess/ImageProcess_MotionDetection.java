@@ -3,6 +3,7 @@ package imageprocess;
 import algorithms.DiffMotionDetector;
 import algorithms.KernelDensityEstimator;
 import algorithms.Vibe;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -10,6 +11,7 @@ import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.BackgroundSubtractorMOG2;
 import org.opencv.video.Video;
 import org.opencv.videoio.VideoCapture;
+import utils.Utils;
 
 public class ImageProcess_MotionDetection {
     private VideoCapture capture;
@@ -25,6 +27,7 @@ public class ImageProcess_MotionDetection {
         this.capture = capture;
         pMOG2 = Video.createBackgroundSubtractorMOG2();
         pMOG2.setHistory(100);
+        pMOG2.setDetectShadows(true);
         pknn = Video.createBackgroundSubtractorKNN();
         pknn.setHistory(100);
         kde = new KernelDensityEstimator();
@@ -47,9 +50,22 @@ public class ImageProcess_MotionDetection {
     public Mat getGaussianMixtureModel() {
         Mat frame = new Mat();
         Mat blurFrame = new Mat();
+        //Mat shadow_binary_image =  new Mat();
         if (!currentFrame.empty()) {
             Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
-            pMOG2.apply(blurFrame, frame, 0.1);
+            pMOG2.apply(blurFrame, frame, 0.001);
+            //Imgproc.threshold(frame, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
+            //Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
+
+            //Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+            //Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
+            //Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+            //Imgproc.morphologyEx(shadow_binary_image, shadow_binary_image, Imgproc.MORPH_CLOSE, kernel);
+            //Mat labels = new Mat();
+            //Mat stats = new Mat();
+            //Mat centroids = new Mat();
+            //int connectivity = 4;
+            //Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
         }
         return frame;
     }
@@ -102,7 +118,8 @@ public class ImageProcess_MotionDetection {
     public Mat getGaussianBlur() {
         Mat blurFrame = new Mat();
         if (!currentFrame.empty()) {
-            Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
+            //Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
+            pMOG2.getBackgroundImage(blurFrame);
         }
         return blurFrame;
     }

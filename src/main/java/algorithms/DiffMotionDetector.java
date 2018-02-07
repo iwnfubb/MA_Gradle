@@ -2,6 +2,8 @@ package algorithms;
 
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.video.BackgroundSubtractorMOG2;
+import org.opencv.video.Video;
 import utils.Parameters;
 import utils.Utils;
 
@@ -18,12 +20,16 @@ public class DiffMotionDetector {
     private boolean trigger = false;
     private int counter;
 
+    BackgroundSubtractorMOG2 backgroundSubtractorMOG2;
     Person.Persons personsList;
 
 
     public DiffMotionDetector() {
         background_gray = new Mat();
         personsList = new Person.Persons(Parameters.movementMaximum, Parameters.movementMinimum, Parameters.movementTime);
+        backgroundSubtractorMOG2 = Video.createBackgroundSubtractorMOG2();
+        backgroundSubtractorMOG2.setHistory(100);
+        backgroundSubtractorMOG2.setDetectShadows(true);
     }
 
 
@@ -36,6 +42,12 @@ public class DiffMotionDetector {
 
 
     private Mat returnMask(Mat frame) {
+        Mat mog2Mask =  new Mat();
+        backgroundSubtractorMOG2.apply(frame, mog2Mask, 0.001);
+        Mat shadow_binary_image =  new Mat();
+        Imgproc.threshold(mog2Mask, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
+        Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
+
         long startTime = System.currentTimeMillis();
         backgroundDensity = 0;
         if (frame.empty()) {
@@ -52,20 +64,25 @@ public class DiffMotionDetector {
 
         Imgproc.threshold(delta_image, threshold_image, threshold, 255, Imgproc.THRESH_BINARY);
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
 
         Mat labels = new Mat();
         Mat stats = new Mat();
         Mat centroids = new Mat();
-        int connectivity = 4;
+        int connectivity = 8;
 
         Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        //Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode);
+        //Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
+        //Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
+        Core.bitwise_xor(threshold_image, shadow_binary_image, threshold_image);
+
         Imgproc.erode(threshold_image, threshold_image, kernelErode);
-        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
         //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
-        Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids,
-                connectivity, CvType.CV_32S);
+        Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids, connectivity, CvType.CV_32S);
+
         double sum = 0;
         for (int i = 0; i < stats.rows(); i++) {
             sum += stats.get(i, 4)[0];
