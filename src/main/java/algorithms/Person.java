@@ -14,6 +14,7 @@ public class Person {
     int lastmoveTime = 0;
     int lastseenTime = 0;
     int id = counter++;
+    int sameBBDetected = 0;
 
     boolean alert;
     boolean remove;
@@ -26,6 +27,20 @@ public class Person {
         this.movementMaximum = movementMaximum;
         this.movementMinimum = movementMinimum;
         this.movementTime = movementTime;
+    }
+
+    public Person clone() {
+        Person person = new Person(rect, movementMaximum, movementMinimum, movementTime);
+        person.lastseenTime = lastseenTime;
+        person.lastmoveTime = lastmoveTime;
+        person.id = id;
+        person.sameBBDetected = sameBBDetected;
+        person.alert = alert;
+        person.remove = remove;
+        person.posture = posture;
+        person.bad_prediction = bad_prediction;
+        person.good_prediction = good_prediction;
+        return person;
     }
 
     public boolean samePerson(Rect rect) {
@@ -44,9 +59,18 @@ public class Person {
                 Math.abs(rect.width - this.rect.width) > movementMinimum ||
                 Math.abs(rect.height - this.rect.height) > movementMinimum) {
             lastmoveTime = 0;
+            sameBBDetected = 0;
         }
         this.rect = rect;
         this.lastseenTime = 0;
+    }
+
+    public boolean exactlySame(Rect rect) {
+        if (this.rect.x == rect.x && this.rect.y == rect.y && this.rect.height == rect.height && this.rect.width == rect.width) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
@@ -75,6 +99,7 @@ public class Person {
 
     public static class Persons {
         ArrayList<Person> persons = new ArrayList<>();
+        ArrayList<Person> removed_persons = new ArrayList<>();
         int movementMaximum;
         int movementMinimum;
         int movementTime;
@@ -88,6 +113,12 @@ public class Person {
         public Person addPerson(Rect rect) {
             Person p = familiarPerson(rect);
             if (p != null) {
+                if (p.exactlySame(rect)) {
+                    p.sameBBDetected++;
+                }
+                if (p.sameBBDetected == 30) {
+                    p.remove = true;
+                }
                 p.editPerson(rect);
                 return p;
             } else {
@@ -112,6 +143,7 @@ public class Person {
                 Person p = iterator.next();
                 p.tick();
                 if (p.getRemove()) {
+                    removed_persons.add(p.clone());
                     iterator.remove();
                 }
             }
