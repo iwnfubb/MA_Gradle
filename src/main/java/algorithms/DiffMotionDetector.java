@@ -14,7 +14,7 @@ public class DiffMotionDetector {
     Mat background_gray;
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
-    private boolean isBackgroundSet = false;
+    public boolean isBackgroundSet = false;
     Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
     private boolean trigger = false;
@@ -34,17 +34,15 @@ public class DiffMotionDetector {
 
 
     public void setBackground(Mat frame) {
-        if (Utils.activeShadowRemover) {
-            Utils.calculateInvariant(frame).copyTo(frame);
-        }
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
 
     private Mat returnMask(Mat frame) {
-        Mat mog2Mask =  new Mat();
+
+        Mat mog2Mask = new Mat();
         backgroundSubtractorMOG2.apply(frame, mog2Mask, 0.001);
-        Mat shadow_binary_image =  new Mat();
+        Mat shadow_binary_image = new Mat();
         Imgproc.threshold(mog2Mask, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
         Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
 
@@ -54,10 +52,8 @@ public class DiffMotionDetector {
             return new Mat();
         }
         Mat image_gray = new Mat();
-        if (Utils.activeShadowRemover) {
-            Utils.calculateInvariant(frame).copyTo(frame);
-        }
         Imgproc.cvtColor(frame, image_gray, Imgproc.COLOR_BGR2GRAY);
+
         Mat delta_image = new Mat();
         Core.absdiff(background_gray, image_gray, delta_image);
         Mat threshold_image = new Mat();
@@ -131,7 +127,6 @@ public class DiffMotionDetector {
                 history.remove(i);
             }
         }
-
     }
 
 

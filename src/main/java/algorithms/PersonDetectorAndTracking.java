@@ -14,7 +14,7 @@ public class PersonDetectorAndTracking {
     PostureDetector postureDetector;
     MovingDetector movingDetector;
 
-    DiffMotionDetector diffMotionDetector;
+    public DiffMotionDetector diffMotionDetector;
 
     FuzzyModel fuzzyModel;
     public ArrayList<EvaluationValue> list;
@@ -40,13 +40,13 @@ public class PersonDetectorAndTracking {
     }
 
     public Mat[] detection(Mat input) {
+        diffMotionDetector.personsList.tick();
         /*Using Diff Detector*/
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
         Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
         Mat binary_mat = diffMotionDetector.thresholdMat;
 
-        diffMotionDetector.personsList.tick();
 
         Mat imageROI = new Mat();
         if (diffMotionDetector.history.size() != 0) {
@@ -81,9 +81,9 @@ public class PersonDetectorAndTracking {
                         new Point(person.rect.x, person.rect.y + person.rect.height),
                         color, 2);
             }
-            Imgproc.putText(diff_mark, person.getID() + " : " + person.lastmoveTime,
+            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime + ":" + person.sameBBDetected,
                     new Point(person.rect.x, person.rect.y - 20),
-                    Core.FONT_HERSHEY_SIMPLEX, 2, color, 2);
+                    Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
 
             for (Person p : diffMotionDetector.personsList.persons) {
                 drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);

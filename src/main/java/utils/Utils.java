@@ -15,7 +15,7 @@ public final class Utils {
     public static String PATH_TO_VIDEOS_INPUT_FOLDER = "src/main/videos_input/";
     public static String PATH_TO_VIDEOS_OUTPUT_FOLDER = "src/main/videos_output/";
     public static String PATH_TO_RESOURCES_FOLDER = "src/main/resources/";
-    public static boolean activeShadowRemover = false;
+    public static boolean activeShadowRemover = true;
 
 
     /**
