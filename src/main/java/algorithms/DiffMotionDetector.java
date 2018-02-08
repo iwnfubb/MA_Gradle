@@ -14,6 +14,8 @@ public class DiffMotionDetector {
     Mat background_gray;
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
+    Rect history_mog2;
+    Mat mog2_mask = new Mat();
     public boolean isBackgroundSet = false;
     Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
@@ -39,11 +41,28 @@ public class DiffMotionDetector {
 
 
     private Mat returnMask(Mat frame) {
+        Mat kernelErode3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Mat kernelDalate3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Mat kernelDalate5 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        Mat kernelDalate7 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(7, 7));
+        Mat labels = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+        int connectivity = 8;
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+
 
         Mat mog2Mask = new Mat();
         backgroundSubtractorMOG2.apply(frame, mog2Mask, 0.001);
         Mat shadow_binary_image = new Mat();
         Imgproc.threshold(mog2Mask, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
+
+        Imgproc.threshold(mog2Mask, mog2Mask, 128, 255, Imgproc.THRESH_BINARY);
+        Imgproc.erode(mog2Mask, mog2Mask, kernelErode3);
+        Imgproc.dilate(mog2Mask, mog2Mask, kernelDalate5);
+        Imgproc.connectedComponentsWithStats(mog2Mask, labels, stats, centroids, connectivity, CvType.CV_32S);
+        mog2Mask.copyTo(mog2_mask);
+
         Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
 
         long startTime = System.currentTimeMillis();
@@ -60,22 +79,15 @@ public class DiffMotionDetector {
 
         Imgproc.threshold(delta_image, threshold_image, threshold, 255, Imgproc.THRESH_BINARY);
 
-        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
 
-        Mat labels = new Mat();
-        Mat stats = new Mat();
-        Mat centroids = new Mat();
-        int connectivity = 8;
+        Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode3);
+        Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate3);
+        Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
 
-        Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-        Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
-        //Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode);
-        //Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
-        //Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
         Core.bitwise_xor(threshold_image, shadow_binary_image, threshold_image);
 
-        Imgproc.erode(threshold_image, threshold_image, kernelErode);
-        Imgproc.dilate(threshold_image, threshold_image, kernelDalate);
+        Imgproc.erode(threshold_image, threshold_image, kernelErode3);
+        Imgproc.dilate(threshold_image, threshold_image, kernelDalate5);
         //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids, connectivity, CvType.CV_32S);
 
@@ -86,12 +98,22 @@ public class DiffMotionDetector {
 
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
+            history.addAll(BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image));
             if (currentMotion != null) {
                 history.add(currentMotion);
                 backgroundDensity = stats.get(0, 4)[0] / sum;
                 updateBackgroundImage(currentMotion, image_gray);
             }
         }
+        if (BinaryMaskAnalyser.returnNumberOfContours(mog2Mask) > 0) {
+            Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(mog2Mask);
+            if (currentMotion != null) {
+                history_mog2 = currentMotion;
+            } else {
+                history_mog2 = new Rect(0, 0, 0, 0);
+            }
+        }
+
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         threshold_image.copyTo(thresholdMat);
@@ -100,7 +122,7 @@ public class DiffMotionDetector {
 
 
     public void updateBackgroundImage(Rect currentMotion, Mat image_gray) {
-        if (backgroundDensity < 0.9) {
+        if (backgroundDensity < 0.8) {
             history.removeAll(history);
             image_gray.copyTo(background_gray);
             trigger = true;

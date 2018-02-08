@@ -3,7 +3,7 @@ package utils;
 import org.opencv.core.Scalar;
 
 public class Parameters {
-    public static int movementMaximum = 75;  //amount to move to still be the same person
+    public static int movementMaximum = 100;  //amount to move to still be the same person
     public static int movementMinimum = 3;   //minimum amount to move to not trigger alarm
     public static int movementTime = 15;     //number of frames after the alarm is triggered
 

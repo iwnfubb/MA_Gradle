@@ -61,6 +61,40 @@ public class BinaryMaskAnalyser {
         }
     }
 
+    public static ArrayList<Rect> notMaxAreaRectangle(Mat mask) {
+        if (mask.empty()) {
+            return null;
+        }
+        Mat result = new Mat();
+        mask.copyTo(result);
+        if (result.channels() == 3) {
+            Imgproc.cvtColor(result, result, Imgproc.COLOR_BGR2GRAY);
+        }
+        List<MatOfPoint> contours = new ArrayList<>();
+        Mat hierarchy = new Mat();
+        Imgproc.findContours(result, contours, hierarchy, 1, 2);
+        double[] area_array = new double[contours.size()];
+        int counter = 0;
+        for (MatOfPoint cnt : contours) {
+            area_array[counter] = Imgproc.contourArea(cnt);
+            counter++;
+        }
+
+        if (area_array.length == 0) {
+            return new ArrayList<>();
+        }
+
+        int max_area_index = getIndexOfLargest(area_array);
+        ArrayList<Rect> rects = new ArrayList<>();
+        for (int i = 0; i < contours.size(); i++) {
+            if (i != max_area_index) {
+                rects.add(Imgproc.boundingRect(contours.get(i)));
+            }
+        }
+        return rects;
+
+    }
+
     private static int getIndexOfLargest(double[] array) {
         if (array == null || array.length == 0) return -1; // null or empty
 

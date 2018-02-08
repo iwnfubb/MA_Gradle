@@ -41,12 +41,28 @@ public class PersonDetectorAndTracking {
 
     public Mat[] detection(Mat input) {
         diffMotionDetector.personsList.tick();
+
+        for (int i = 0; i < diffMotionDetector.personsList.persons.size(); i++) {
+            if (diffMotionDetector.personsList.persons.get(i).forcedDelete) {
+                Rect r = diffMotionDetector.personsList.persons.get(i).rect;
+                Mat image_gray = new Mat();
+                Imgproc.cvtColor(input, image_gray, Imgproc.COLOR_BGR2GRAY);
+                Mat imageROI = new Mat(image_gray, r);
+                imageROI.copyTo(diffMotionDetector.background_gray.colRange(r.x, r.x + imageROI.cols()).rowRange(r.y, r.y + imageROI.rows()));
+                for (int k = 0; k < diffMotionDetector.history.size(); k++) {
+                    if (diffMotionDetector.personsList.persons.get(i).exactlySame(diffMotionDetector.history.get(k))) {
+                        diffMotionDetector.history.remove(k);
+                    }
+                }
+            }
+        }
+
+
         /*Using Diff Detector*/
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
         Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
         Mat binary_mat = diffMotionDetector.thresholdMat;
-
 
         Mat imageROI = new Mat();
         if (diffMotionDetector.history.size() != 0) {
@@ -64,6 +80,12 @@ public class PersonDetectorAndTracking {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             Point center = Utils.getCenter(current_rect);
             Person person = diffMotionDetector.personsList.addPerson(current_rect);
+
+            if (Utils.overlaps(person.rect, diffMotionDetector.history_mog2)) {
+                person.forcedDelete = false;
+                person.sameBBDetected = 0;
+            }
+            
             String moving = "moving";
             if (person.lastmoveTime != 0) {
                 moving = "not_moving";
@@ -81,22 +103,27 @@ public class PersonDetectorAndTracking {
                         new Point(person.rect.x, person.rect.y + person.rect.height),
                         color, 2);
             }
-            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime + ":" + person.sameBBDetected,
+            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime,
                     new Point(person.rect.x, person.rect.y - 20),
+                    Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
+            Imgproc.putText(diff_mark, "ls:" + person.lastseenTime + " sbb:" + person.sameBBDetected,
+                    new Point(person.rect.x, person.rect.y - 60),
                     Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
 
             for (Person p : diffMotionDetector.personsList.persons) {
                 drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);
             }
 
+            drawImageWithRect(diff_mark, diffMotionDetector.history_mog2, Parameters.color_red);
             drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
             list.get(frame_number).setPerson_there("true");
             list.get(frame_number).setPosture(postureInString);
             list.get(frame_number).setIsMoving(moving);
-            if (person.alert)
+            if (person.alert) {
                 list.get(frame_number).setStatus("not_ok");
-            else
+            } else {
                 list.get(frame_number).setStatus("ok");
+            }
 
             writeInfo(status, center.toString(), postureInString, moving, evaluate);
         }
@@ -104,7 +131,7 @@ public class PersonDetectorAndTracking {
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
-        return new Mat[]{input, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
+        return new Mat[]{diffMotionDetector.mog2_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 
 

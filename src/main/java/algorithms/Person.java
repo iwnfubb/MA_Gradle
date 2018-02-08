@@ -16,6 +16,7 @@ public class Person {
     int id = counter++;
     int sameBBDetected = 0;
 
+    boolean forcedDelete;
     boolean alert;
     boolean remove;
     String posture;
@@ -59,6 +60,8 @@ public class Person {
                 Math.abs(rect.width - this.rect.width) > movementMinimum ||
                 Math.abs(rect.height - this.rect.height) > movementMinimum) {
             lastmoveTime = 0;
+        }
+        if (!exactlySame(rect)) {
             sameBBDetected = 0;
         }
         this.rect = rect;
@@ -99,7 +102,6 @@ public class Person {
 
     public static class Persons {
         ArrayList<Person> persons = new ArrayList<>();
-        ArrayList<Person> removed_persons = new ArrayList<>();
         int movementMaximum;
         int movementMinimum;
         int movementTime;
@@ -117,7 +119,7 @@ public class Person {
                     p.sameBBDetected++;
                 }
                 if (p.sameBBDetected == 30) {
-                    p.remove = true;
+                    p.forcedDelete = true;
                 }
                 p.editPerson(rect);
                 return p;
@@ -143,7 +145,6 @@ public class Person {
                 Person p = iterator.next();
                 p.tick();
                 if (p.getRemove()) {
-                    removed_persons.add(p.clone());
                     iterator.remove();
                 }
             }

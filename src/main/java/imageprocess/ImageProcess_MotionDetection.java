@@ -50,24 +50,26 @@ public class ImageProcess_MotionDetection {
     public Mat getGaussianMixtureModel() {
         Mat frame = new Mat();
         Mat blurFrame = new Mat();
-        //Mat shadow_binary_image =  new Mat();
+        Mat shadow_binary_image =  new Mat();
         if (!currentFrame.empty()) {
             Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
             pMOG2.apply(blurFrame, frame, 0.001);
-            //Imgproc.threshold(frame, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
-            //Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
+            Imgproc.threshold(frame, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
+            Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
 
-            //Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-            //Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
+            Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+            Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode);
+            Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+            Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
             //Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
             //Imgproc.morphologyEx(shadow_binary_image, shadow_binary_image, Imgproc.MORPH_CLOSE, kernel);
-            //Mat labels = new Mat();
-            //Mat stats = new Mat();
-            //Mat centroids = new Mat();
-            //int connectivity = 4;
-            //Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
+            Mat labels = new Mat();
+            Mat stats = new Mat();
+            Mat centroids = new Mat();
+            int connectivity = 8;
+            Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
         }
-        return frame;
+        return shadow_binary_image;
     }
 
     public Mat getKNNModel() {
