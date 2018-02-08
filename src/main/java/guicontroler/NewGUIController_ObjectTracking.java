@@ -3,7 +3,6 @@ package guicontroler;
 import imageprocess.ImageProcess_ObjectTracking;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
@@ -17,10 +16,14 @@ import utils.CSVWriter;
 import utils.EvaluationValue;
 import utils.Utils;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -60,19 +63,33 @@ public class NewGUIController_ObjectTracking {
     private int output_height = 720 * 3;
     private VideoWriter videoWriter;
     FileWriter fileWriter;
-    ArrayList<EvaluationValue> list = new ArrayList<>();
+    ArrayList<EvaluationValue> list;
+    Iterator<File> iterator = getAllFilesInFolder().iterator();
+
 
     /**
      * The action triggered by pushing the button on the GUI
-     *
-     * @param event the push button event
      */
     @FXML
-    protected void startCamera(ActionEvent event) {
-        if (Utils.activeShadowRemover) {
-            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow" + fileName;
+    protected void startCamera() {
+        File f = null;
+        if (iterator.hasNext()) {
+            f = iterator.next();
         } else {
-            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_" + fileName;
+            return;
+        }
+        //files = getAllFilesInFolder();
+
+        inputPath = f.getPath();
+        fileName = f.getName();
+        String fileNameWithoutExt = fileName;
+        if (fileNameWithoutExt.indexOf(".") > 0) {
+            fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
+        }
+        if (Utils.activeShadowRemover) {
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow" + fileNameWithoutExt + ".mp4";
+        } else {
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_" + fileNameWithoutExt + ".mp4";
         }
 
         videoWriter = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);
@@ -107,6 +124,16 @@ public class NewGUIController_ObjectTracking {
                     imgProcess.personDetectorAndTracking.frame_number = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
+                    if (originalFrame.empty()) {
+                        this.cameraActive = false;
+                        save();
+                        this.capture.release();
+                        this.videoWriter.release();
+                        if (iterator.hasNext()) {
+                            imgProcess.personDetectorAndTracking.diffMotionDetector.isBackgroundSet = false;
+                            startCamera();
+                        }
+                    }
                     Mat firstRow;
 
                     Mat[] detection = imgProcess.personDetector(originalFrame);
@@ -173,6 +200,7 @@ public class NewGUIController_ObjectTracking {
             // release the camera
             this.capture.release();
             videoWriter.release();
+
         }
     }
 
@@ -199,6 +227,7 @@ public class NewGUIController_ObjectTracking {
 
 
     private void createCVSFile() {
+        list = new ArrayList<>();
         String fileNameWithoutExt = fileName;
         if (fileNameWithoutExt.indexOf(".") > 0) {
             fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
@@ -228,17 +257,33 @@ public class NewGUIController_ObjectTracking {
             for (int i = 0; i < list.size(); i++) {
                 CSVWriter.writeLine(fileWriter, list.get(i).toCSVFormat());
             }
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            /*Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Information Dialog");
             alert.setHeaderText("Look, an Information Dialog");
             alert.setContentText("Save done!");
 
-            alert.showAndWait();
+            alert.showAndWait();*/
             fileWriter.flush();
             fileWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NullPointerException ex) {
         }
+    }
+
+
+    private List<File> getAllFilesInFolder() {
+        File folder = new File(Utils.PATH_TO_VIDEOS_INPUT_FOLDER);
+        File[] listOfFiles = folder.listFiles((dir, name) -> name.endsWith(".mp4"));
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                System.out.println("File " + listOfFiles[i].getName());
+            } else if (listOfFiles[i].isDirectory()) {
+                System.out.println("Directory " + listOfFiles[i].getName());
+            }
+        }
+        List<File> files = Arrays.asList(listOfFiles);
+        return files;
     }
 }
