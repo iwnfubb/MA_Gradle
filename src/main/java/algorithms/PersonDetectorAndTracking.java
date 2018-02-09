@@ -40,6 +40,7 @@ public class PersonDetectorAndTracking {
     }
 
     public Mat[] detection(Mat input) {
+        long startTime = System.currentTimeMillis();
         diffMotionDetector.personsList.tick();
 
         for (int i = 0; i < diffMotionDetector.personsList.persons.size(); i++) {
@@ -85,7 +86,7 @@ public class PersonDetectorAndTracking {
                 person.forcedDelete = false;
                 person.sameBBDetected = 0;
             }
-            
+
             String moving = "moving";
             if (person.lastmoveTime != 0) {
                 moving = "not_moving";
@@ -124,13 +125,13 @@ public class PersonDetectorAndTracking {
             } else {
                 list.get(frame_number).setStatus("ok");
             }
-
             writeInfo(status, center.toString(), postureInString, moving, evaluate);
         }
 
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
+        System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         return new Mat[]{diffMotionDetector.mog2_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 
