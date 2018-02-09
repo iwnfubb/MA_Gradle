@@ -8,6 +8,7 @@ import utils.Parameters;
 import utils.Utils;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class DiffMotionDetector {
@@ -84,7 +85,7 @@ public class DiffMotionDetector {
         Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate3);
         Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
 
-        Core.bitwise_xor(threshold_image, shadow_binary_image, threshold_image);
+        Core.subtract(threshold_image, shadow_binary_image, threshold_image);
 
         Imgproc.erode(threshold_image, threshold_image, kernelErode3);
         Imgproc.dilate(threshold_image, threshold_image, kernelDalate5);
@@ -98,7 +99,11 @@ public class DiffMotionDetector {
 
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
-            history.addAll(BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image));
+            ArrayList<Rect> rects = BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image);
+            for (Rect r : rects) {
+                drawImageWithRect(frame, r, Parameters.color_white);
+            }
+            history.addAll(rects);
             if (currentMotion != null) {
                 history.add(currentMotion);
                 backgroundDensity = stats.get(0, 4)[0] / sum;
@@ -118,6 +123,20 @@ public class DiffMotionDetector {
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
+    }
+
+    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(bestRect);
+        drawRect(input, matOfRect, color);
+        return input;
+    }
+
+    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
+        List<Rect> rects = matOfRect.toList();
+        for (Rect r : rects) {
+            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
+        }
     }
 
 
@@ -141,12 +160,14 @@ public class DiffMotionDetector {
             }
         }
 
-        for (int i = 0; i < history.size(); i++) {
-            Rect r = history.get(i);
+        Iterator<Rect> iterator = history.iterator();
+        while (iterator.hasNext())
+        {
+            Rect r = iterator.next();
             if (!Utils.overlaps(r, currentMotion)) {
                 Mat imageROI = new Mat(image_gray, r);
                 imageROI.copyTo(background_gray.colRange(r.x, r.x + imageROI.cols()).rowRange(r.y, r.y + imageROI.rows()));
-                history.remove(i);
+                iterator.remove();
             }
         }
     }
