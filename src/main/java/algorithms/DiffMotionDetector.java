@@ -2,7 +2,7 @@ package algorithms;
 
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.video.BackgroundSubtractorMOG2;
+import org.opencv.video.BackgroundSubtractorKNN;
 import org.opencv.video.Video;
 import utils.Parameters;
 import utils.Utils;
@@ -15,24 +15,24 @@ public class DiffMotionDetector {
     Mat background_gray;
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
-    Rect history_mog2;
-    Mat mog2_mask = new Mat();
+    Rect history_knn;
+    Mat knn_mask = new Mat();
     public boolean isBackgroundSet = false;
     Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
     private boolean trigger = false;
     private int counter;
 
-    BackgroundSubtractorMOG2 backgroundSubtractorMOG2;
+    BackgroundSubtractorKNN backgroundSubtractorKNN;
     Person.Persons personsList;
 
 
     public DiffMotionDetector() {
         background_gray = new Mat();
         personsList = new Person.Persons(Parameters.movementMaximum, Parameters.movementMinimum, Parameters.movementTime);
-        backgroundSubtractorMOG2 = Video.createBackgroundSubtractorMOG2();
-        backgroundSubtractorMOG2.setHistory(100);
-        backgroundSubtractorMOG2.setDetectShadows(true);
+        backgroundSubtractorKNN = Video.createBackgroundSubtractorKNN();
+        backgroundSubtractorKNN.setHistory(100);
+        backgroundSubtractorKNN.setDetectShadows(true);
     }
 
 
@@ -54,7 +54,7 @@ public class DiffMotionDetector {
 
 
         Mat mog2Mask = new Mat();
-        backgroundSubtractorMOG2.apply(frame, mog2Mask, 0.001);
+        backgroundSubtractorKNN.apply(frame, mog2Mask, 0.01);
         Mat shadow_binary_image = new Mat();
         Imgproc.threshold(mog2Mask, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
 
@@ -62,7 +62,7 @@ public class DiffMotionDetector {
         Imgproc.erode(mog2Mask, mog2Mask, kernelErode3);
         Imgproc.dilate(mog2Mask, mog2Mask, kernelDalate5);
         Imgproc.connectedComponentsWithStats(mog2Mask, labels, stats, centroids, connectivity, CvType.CV_32S);
-        mog2Mask.copyTo(mog2_mask);
+        mog2Mask.copyTo(knn_mask);
 
         Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
 
@@ -109,9 +109,9 @@ public class DiffMotionDetector {
         if (BinaryMaskAnalyser.returnNumberOfContours(mog2Mask) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(mog2Mask);
             if (currentMotion != null) {
-                history_mog2 = currentMotion;
+                history_knn = currentMotion;
             } else {
-                history_mog2 = new Rect(0, 0, 0, 0);
+                history_knn = new Rect(0, 0, 0, 0);
             }
         }
 

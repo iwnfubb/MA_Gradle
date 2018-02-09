@@ -82,7 +82,7 @@ public class PersonDetectorAndTracking {
             Point center = Utils.getCenter(current_rect);
             Person person = diffMotionDetector.personsList.addPerson(current_rect);
 
-            if (Utils.overlaps(person.rect, diffMotionDetector.history_mog2)) {
+            if (Utils.overlaps(person.rect, diffMotionDetector.history_knn)) {
                 person.forcedDelete = false;
                 person.sameBBDetected = 0;
             }
@@ -115,7 +115,7 @@ public class PersonDetectorAndTracking {
                 drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);
             }
 
-            drawImageWithRect(diff_mark, diffMotionDetector.history_mog2, Parameters.color_red);
+            drawImageWithRect(diff_mark, diffMotionDetector.history_knn, Parameters.color_red);
             drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
             list.get(frame_number).setPerson_there("true");
             list.get(frame_number).setPosture(postureInString);
@@ -132,7 +132,7 @@ public class PersonDetectorAndTracking {
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
-        return new Mat[]{diffMotionDetector.mog2_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
+        return new Mat[]{diffMotionDetector.knn_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 
 
