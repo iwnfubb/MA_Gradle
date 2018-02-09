@@ -1,0 +1,2 @@
+python record.py
+pause
