@@ -1,12 +1,11 @@
 package algorithms;
 
-import org.opencv.core.*;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import utils.AverageHistogram;
 
-import javax.swing.plaf.ListUI;
-import java.awt.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -50,10 +49,10 @@ public class PostureDetector {
             }
 
             double[] scores = scoreCalculation(vertical_histogram, horizontal_histogram);
-            log("## score standing" + scores[0]);
-            log("## score laying" + scores[1]);
-            log("## score bending" + scores[2]);
-            log("## score sitting" + scores[3]);
+            //log("## score standing" + scores[0]);
+            //log("## score laying" + scores[1]);
+            //log("## score bending" + scores[2]);
+            //log("## score sitting" + scores[3]);
             ArrayList<Double> temp = new ArrayList<>();
             temp.add(scores[0]);
             temp.add(scores[1]);
@@ -63,13 +62,13 @@ public class PostureDetector {
             int index = temp.indexOf(max);
 
             double diff = compareWithLastHistogram(vertical_histogram, horizontal_histogram);
-            log("## dif :" + diff);
+            //log("## dif :" + diff);
             last_vertical_histogram = vertical_histogram;
             last_horizontal_histogram = horizontal_histogram;
             if (last_index != -1 && last_index != index) {
                 if (diff < fp_threshold) {
                     falsePositive = true;
-                    log("##### diff change  :" + diff);
+                    //log("##### diff change  :" + diff);
                 }
             }
 
@@ -100,10 +99,10 @@ public class PostureDetector {
             }
 
             double[] scores = scoreCalculation(vertical_histogram, horizontal_histogram);
-            log("## score standing" + scores[0]);
-            log("## score laying" + scores[1]);
-            log("## score bending" + scores[2]);
-            log("## score sitting" + scores[3]);
+            //log("## score standing" + scores[0]);
+            //log("## score laying" + scores[1]);
+            //log("## score bending" + scores[2]);
+            //log("## score sitting" + scores[3]);
             ArrayList<Double> temp = new ArrayList<>();
             temp.add(scores[0]);
             temp.add(scores[1]);
@@ -113,13 +112,13 @@ public class PostureDetector {
             int index = temp.indexOf(max);
 
             double diff = compareWithLastHistogram(vertical_histogram, horizontal_histogram);
-            log("## dif :" + diff);
+            //log("## dif :" + diff);
             last_vertical_histogram = vertical_histogram;
             last_horizontal_histogram = horizontal_histogram;
             if (last_index != -1 && last_index != index) {
                 if (diff < fp_threshold) {
                     falsePositive = true;
-                    log("##### diff change  :" + diff);
+                    //log("##### diff change  :" + diff);
                 }
             }
 
