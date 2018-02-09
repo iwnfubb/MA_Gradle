@@ -66,7 +66,6 @@ public class DiffMotionDetector {
 
         Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
 
-        long startTime = System.currentTimeMillis();
         backgroundDensity = 0;
         if (frame.empty()) {
             return new Mat();
@@ -100,9 +99,6 @@ public class DiffMotionDetector {
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
             ArrayList<Rect> rects = BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image);
-            for (Rect r : rects) {
-                drawImageWithRect(frame, r, Parameters.color_white);
-            }
             history.addAll(rects);
             if (currentMotion != null) {
                 history.add(currentMotion);
@@ -120,23 +116,8 @@ public class DiffMotionDetector {
         }
 
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
-        System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
         threshold_image.copyTo(thresholdMat);
         return threshold_image;
-    }
-
-    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
-        MatOfRect matOfRect = new MatOfRect();
-        matOfRect.fromArray(bestRect);
-        drawRect(input, matOfRect, color);
-        return input;
-    }
-
-    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
-        List<Rect> rects = matOfRect.toList();
-        for (Rect r : rects) {
-            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
-        }
     }
 
 
