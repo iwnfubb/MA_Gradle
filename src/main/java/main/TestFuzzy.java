@@ -7,7 +7,7 @@ import net.sourceforge.jFuzzyLogic.rule.Variable;
 import utils.Utils;
 
 public class TestFuzzy {
-    public static void main(String[] args) {
+    public static void main_(String[] args) {
         String filename = Utils.PATH_TO_RESOURCES_FOLDER + "example.fcl";
         FIS fis = FIS.load(filename, true);
 
@@ -36,5 +36,41 @@ public class TestFuzzy {
 
         // Print ruleSet
         System.out.println("Status: " + status.getValue());
+    }
+
+    public static void main(String[] args) {
+        String filename = Utils.PATH_TO_RESOURCES_FOLDER + "sleep.fcl";
+        FIS fis = FIS.load(filename, true);
+
+        if (fis == null) {
+            System.err.println("Can't load file: '" + filename + "'");
+            System.exit(1);
+        }
+
+        Variable postureVariable = fis.getVariable("posture");
+        postureVariable.setValue(1);
+
+        Variable timeVariable = fis.getVariable("time");
+        timeVariable.setValue(2);
+
+        Variable xpositionVariable = fis.getVariable("xposition");
+        xpositionVariable.setValue(574);
+
+        Variable ypositionVariable = fis.getVariable("yposition");
+        ypositionVariable.setValue(424);
+
+        // Evaluate
+        fis.evaluate();
+        // Show output variable's chart
+        Variable status = fis.getVariable("status");
+
+        status.defuzzify();
+
+        // Print ruleSet
+        String str = ("Status: " + status.getValue() + "\n"
+                + " bad: " + status.getMembership("bad") + "\n"
+                + " good: " + status.getMembership("good") + "\n");
+        System.out.println(str);
+        JFuzzyChart.get().chart(status, status.getDefuzzifier(), true);
     }
 }
