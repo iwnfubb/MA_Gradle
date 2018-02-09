@@ -30,6 +30,7 @@ public class ImageProcess_MotionDetection {
         pMOG2.setDetectShadows(true);
         pknn = Video.createBackgroundSubtractorKNN();
         pknn.setHistory(100);
+        pknn.setDetectShadows(true);
         kde = new KernelDensityEstimator();
         kde.setN(10);
         vibe = new Vibe();
@@ -53,21 +54,21 @@ public class ImageProcess_MotionDetection {
         Mat shadow_binary_image =  new Mat();
         if (!currentFrame.empty()) {
             Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
-            pMOG2.apply(blurFrame, frame, 0.001);
-            Imgproc.threshold(frame, shadow_binary_image, 128, 255, Imgproc.THRESH_TOZERO_INV);
-            Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
-
-            Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-            Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode);
-            Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
-            Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
+            pMOG2.apply(blurFrame, frame, 0.01);
+            Imgproc.threshold(frame, shadow_binary_image, 129, 255, Imgproc.THRESH_BINARY);
+            //Imgproc.threshold(shadow_binary_image, shadow_binary_image, 1, 255, Imgproc.THRESH_BINARY);
+            //frame.copyTo(shadow_binary_image);
+            //Mat kernelErode = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+            //Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode);
+            //Mat kernelDalate = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+            //Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate);
             //Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
             //Imgproc.morphologyEx(shadow_binary_image, shadow_binary_image, Imgproc.MORPH_CLOSE, kernel);
-            Mat labels = new Mat();
-            Mat stats = new Mat();
-            Mat centroids = new Mat();
-            int connectivity = 8;
-            Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
+            //Mat labels = new Mat();
+            //Mat stats = new Mat();
+            //Mat centroids = new Mat();
+            //int connectivity = 8;
+            //Imgproc.connectedComponentsWithStats(shadow_binary_image, labels, stats, centroids, connectivity, CvType.CV_32S);
         }
         return shadow_binary_image;
     }
@@ -77,7 +78,9 @@ public class ImageProcess_MotionDetection {
         Mat blurFrame = new Mat();
         if (!currentFrame.empty()) {
             Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
-            pknn.apply(blurFrame, frame, 0.1);
+            pknn.apply(blurFrame, frame, 0.01);
+            Imgproc.threshold(frame, frame, 129, 255, Imgproc.THRESH_BINARY);
+
         }
         return frame;
     }
@@ -120,8 +123,8 @@ public class ImageProcess_MotionDetection {
     public Mat getGaussianBlur() {
         Mat blurFrame = new Mat();
         if (!currentFrame.empty()) {
-            //Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
-            pMOG2.getBackgroundImage(blurFrame);
+            Imgproc.GaussianBlur(currentFrame, blurFrame, gaussianFilterSize, 0);
+            //pMOG2.getBackgroundImage(blurFrame);
         }
         return blurFrame;
     }
