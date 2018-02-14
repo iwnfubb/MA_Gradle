@@ -12,6 +12,7 @@ public class Person {
     int movementMinimum;   //minimum amount to move to not trigger alarm
     int movementTime;     //number of frames after the alarm is triggered
     int lastmoveTime = 0;
+    int lastLayingTime = 0;
     int lastseenTime = 0;
     int id = counter++;
     int sameBBDetected = 0;
@@ -84,7 +85,14 @@ public class Person {
     public void tick() {
         lastmoveTime += 1;
         lastseenTime += 1;
-        if (lastmoveTime > movementTime && posture == "laying" && bad_prediction > 0.8) {
+        if (posture == "laying" && bad_prediction > 0.8) {
+            lastLayingTime++;
+        }
+        else {
+            lastLayingTime = 0;
+        }
+
+        if (lastLayingTime > movementTime && posture == "laying" && bad_prediction > 0.8) {
             alert = true;
         }
         if (lastseenTime > 4) {

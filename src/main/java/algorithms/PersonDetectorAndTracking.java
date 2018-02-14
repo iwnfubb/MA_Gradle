@@ -104,7 +104,7 @@ public class PersonDetectorAndTracking {
                         new Point(person.rect.x, person.rect.y + person.rect.height),
                         color, 2);
             }
-            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime,
+            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastLayingTime,
                     new Point(person.rect.x, person.rect.y - 20),
                     Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
             Imgproc.putText(diff_mark, "ls:" + person.lastseenTime + " sbb:" + person.sameBBDetected,

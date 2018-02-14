@@ -90,12 +90,12 @@ public class DiffMotionDetector {
             if (currentMotion != null) {
                 history.removeAll(history);
                 history.add(currentMotion);
-                backgroundDensity = stats.get(0, 4)[0] / sum;
                 history_knn = currentMotion;
             } else {
                 history_knn = new Rect(0, 0, 0, 0);
             }
         }
+        backgroundDensity = stats.get(0, 4)[0] / sum;
 
         System.out.println("##### BackgroundDensity: " + backgroundDensity);
         mog2Mask.copyTo(thresholdMat);
