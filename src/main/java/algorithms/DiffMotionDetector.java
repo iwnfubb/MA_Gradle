@@ -15,13 +15,15 @@ public class DiffMotionDetector {
     Mat background_gray;
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
-    Rect history_knn;
+    Rect history_knn = new Rect(0, 0, 0, 0);
     Mat knn_mask = new Mat();
     public boolean isBackgroundSet = false;
     Mat thresholdMat = new Mat();
     private double backgroundDensity = 0;
     private boolean trigger = false;
-    private int counter;
+    private boolean trigger_KNN = false;
+    private int counter = 0;
+    private int counter_KNN = 0;
 
     BackgroundSubtractorKNN backgroundSubtractorKNN;
     Person.Persons personsList;
@@ -40,6 +42,66 @@ public class DiffMotionDetector {
         Imgproc.cvtColor(frame, background_gray, Imgproc.COLOR_BGR2GRAY);
     }
 
+    private Mat returnMask_MOG(Mat frame) {
+        if (frame.empty()) {
+            return new Mat();
+        }
+
+        Mat kernelErode3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+        Mat kernelDalate5 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
+        Mat labels = new Mat();
+        Mat stats = new Mat();
+        Mat centroids = new Mat();
+        int connectivity = 8;
+
+        Mat mog2Mask = new Mat();
+        backgroundSubtractorKNN.applyOutsideRect(frame, mog2Mask, 0.01, history_knn);
+        if (backgroundDensity < 0.8) {
+            trigger_KNN = true;
+            counter_KNN = 0;
+        }
+
+        if (trigger_KNN) {
+            counter_KNN++;
+            backgroundSubtractorKNN.apply(frame, mog2Mask, 0.01);
+            if (counter_KNN>= 30) {
+                history.removeAll(history);
+                personsList.persons.removeAll(personsList.persons);
+                trigger_KNN = false;
+                counter_KNN = 0;
+            }
+        }
+
+
+        Imgproc.threshold(mog2Mask, mog2Mask, 128, 255, Imgproc.THRESH_BINARY);
+        Imgproc.erode(mog2Mask, mog2Mask, kernelErode3);
+        Imgproc.dilate(mog2Mask, mog2Mask, kernelDalate5);
+        Imgproc.connectedComponentsWithStats(mog2Mask, labels, stats, centroids, connectivity, CvType.CV_32S);
+        mog2Mask.copyTo(knn_mask);
+
+        backgroundDensity = 0;
+        double sum = 0;
+        for (int i = 0; i < stats.rows(); i++) {
+            sum += stats.get(i, 4)[0];
+        }
+
+        if (BinaryMaskAnalyser.returnNumberOfContours(mog2Mask) > 0) {
+            Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(mog2Mask);
+            if (currentMotion != null) {
+                history.removeAll(history);
+                history.add(currentMotion);
+                backgroundDensity = stats.get(0, 4)[0] / sum;
+                history_knn = currentMotion;
+            } else {
+                history_knn = new Rect(0, 0, 0, 0);
+            }
+        }
+
+        System.out.println("##### BackgroundDensity: " + backgroundDensity);
+        mog2Mask.copyTo(thresholdMat);
+        backgroundSubtractorKNN.getBackgroundImage(background_gray);
+        return mog2Mask;
+    }
 
     private Mat returnMask(Mat frame) {
         Mat kernelErode3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
@@ -142,8 +204,7 @@ public class DiffMotionDetector {
         }
 
         Iterator<Rect> iterator = history.iterator();
-        while (iterator.hasNext())
-        {
+        while (iterator.hasNext()) {
             Rect r = iterator.next();
             if (!Utils.overlaps(r, currentMotion)) {
                 Mat imageROI = new Mat(image_gray, r);
@@ -162,7 +223,7 @@ public class DiffMotionDetector {
                 setBackground(frame);
                 isBackgroundSet = true;
             }
-            returnMask(frame);
+            returnMask_MOG(frame);
         }
         return frame;
     }

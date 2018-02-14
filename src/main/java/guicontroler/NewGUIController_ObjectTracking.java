@@ -76,6 +76,12 @@ public class NewGUIController_ObjectTracking {
         if (iterator.hasNext()) {
             f = iterator.next();
         } else {
+            try {
+                this.timer.shutdown();
+                this.timer.awaitTermination(33, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             return;
         }
         //files = getAllFilesInFolder();
@@ -129,10 +135,8 @@ public class NewGUIController_ObjectTracking {
                         save();
                         this.capture.release();
                         this.videoWriter.release();
-                        if (iterator.hasNext()) {
-                            imgProcess.personDetectorAndTracking.diffMotionDetector.isBackgroundSet = false;
-                            startCamera();
-                        }
+                        imgProcess.personDetectorAndTracking.diffMotionDetector.isBackgroundSet = false;
+                        startCamera();
                     }
                     Mat firstRow;
 
