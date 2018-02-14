@@ -16,7 +16,7 @@ public class Person {
     int id = counter++;
     int sameBBDetected = 0;
 
-    boolean forcedDelete;
+    public boolean forcedDelete;
     boolean alert;
     boolean remove;
     String posture;
@@ -115,12 +115,6 @@ public class Person {
         public Person addPerson(Rect rect) {
             Person p = familiarPerson(rect);
             if (p != null) {
-                if (p.exactlySame(rect)) {
-                    p.sameBBDetected++;
-                }
-                if (p.sameBBDetected == 30) {
-                    p.forcedDelete = true;
-                }
                 p.editPerson(rect);
                 return p;
             } else {

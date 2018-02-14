@@ -153,11 +153,11 @@ public class PersonDetectorAndTracking {
         /*Using Diff Detector*/
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
-        Mat diff_mark = diffMotionDetector.getDiffDetector(copyOfInput);
+        Mat diff_mark = diffMotionDetector.getDiffDetector_MOG(copyOfInput);
         Mat binary_mat = diffMotionDetector.thresholdMat;
 
         Mat imageROI = new Mat();
-        if (diffMotionDetector.history.size() != 0) {
+        if (diffMotionDetector.history.size() != 0 && diffMotionDetector.backgroundDensity >= 0.8) {
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             imageROI = new Mat(binary_mat, current_rect);
         } else {
@@ -166,9 +166,9 @@ public class PersonDetectorAndTracking {
 
         Mat status = new Mat(input.size(), CvType.CV_8UC3, Scalar.all(126));
         int posture = postureDetector.detect(imageROI);
-        String postureInString = postureDetector.getStatusInString(posture);
 
-        if (diffMotionDetector.history.size() != 0) {
+        if (diffMotionDetector.history.size() != 0 && diffMotionDetector.backgroundDensity >= 0.8) {
+            String postureInString = postureDetector.getStatusInString(posture);
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             Point center = Utils.getCenter(current_rect);
             Person person = diffMotionDetector.personsList.addPerson(current_rect);

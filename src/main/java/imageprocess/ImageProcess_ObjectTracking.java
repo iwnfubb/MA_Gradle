@@ -515,7 +515,7 @@ public class ImageProcess_ObjectTracking {
     }
 
     public Mat[] personDetector(Mat input) {
-        return personDetectorAndTracking.detection(input);
+        return personDetectorAndTracking.detection_KNN(input);
     }
 
 

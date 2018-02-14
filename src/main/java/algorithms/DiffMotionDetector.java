@@ -19,7 +19,7 @@ public class DiffMotionDetector {
     Mat knn_mask = new Mat();
     public boolean isBackgroundSet = false;
     Mat thresholdMat = new Mat();
-    private double backgroundDensity = 0;
+    public double backgroundDensity = 0;
     private boolean trigger = false;
     private boolean trigger_KNN = false;
     private int counter = 0;
@@ -216,6 +216,19 @@ public class DiffMotionDetector {
 
 
     public Mat getDiffDetector(Mat currentFrame) {
+        Mat frame = new Mat();
+        if (!currentFrame.empty()) {
+            currentFrame.copyTo(frame);
+            if (!isBackgroundSet) {
+                setBackground(frame);
+                isBackgroundSet = true;
+            }
+            returnMask(frame);
+        }
+        return frame;
+    }
+
+    public Mat getDiffDetector_MOG(Mat currentFrame) {
         Mat frame = new Mat();
         if (!currentFrame.empty()) {
             currentFrame.copyTo(frame);
