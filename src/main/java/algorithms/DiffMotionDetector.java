@@ -64,7 +64,7 @@ public class DiffMotionDetector {
         if (trigger_KNN) {
             counter_KNN++;
             backgroundSubtractorKNN.apply(frame, mog2Mask, 0.01);
-            if (counter_KNN>= 30) {
+            if (counter_KNN >= 30) {
                 history.removeAll(history);
                 personsList.persons.removeAll(personsList.persons);
                 trigger_KNN = false;
@@ -77,7 +77,6 @@ public class DiffMotionDetector {
         Imgproc.erode(mog2Mask, mog2Mask, kernelErode3);
         Imgproc.dilate(mog2Mask, mog2Mask, kernelDalate5);
         Imgproc.connectedComponentsWithStats(mog2Mask, labels, stats, centroids, connectivity, CvType.CV_32S);
-        mog2Mask.copyTo(knn_mask);
 
         backgroundDensity = 0;
         double sum = 0;

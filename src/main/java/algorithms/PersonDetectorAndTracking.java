@@ -139,17 +139,6 @@ public class PersonDetectorAndTracking {
         long startTime = System.currentTimeMillis();
         diffMotionDetector.personsList.tick();
 
-        for (int i = 0; i < diffMotionDetector.personsList.persons.size(); i++) {
-            if (diffMotionDetector.personsList.persons.get(i).forcedDelete) {
-                for (int k = 0; k < diffMotionDetector.history.size(); k++) {
-                    if (diffMotionDetector.personsList.persons.get(i).exactlySame(diffMotionDetector.history.get(k))) {
-                        diffMotionDetector.history.remove(k);
-                    }
-                }
-            }
-        }
-
-
         /*Using Diff Detector*/
         Mat copyOfInput = new Mat();
         input.copyTo(copyOfInput);
@@ -171,59 +160,58 @@ public class PersonDetectorAndTracking {
             String postureInString = postureDetector.getStatusInString(posture);
             Rect current_rect = diffMotionDetector.history.get(diffMotionDetector.history.size() - 1);
             Point center = Utils.getCenter(current_rect);
-            Person person = diffMotionDetector.personsList.addPerson(current_rect);
 
-            if (Utils.overlaps(person.rect, diffMotionDetector.history_knn)) {
-                person.forcedDelete = false;
-                person.sameBBDetected = 0;
-            }
-
-            String moving = "moving";
-            if (person.lastmoveTime != 0) {
-                moving = "not_moving";
-            }
-            double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
-            Scalar color = Parameters.color_red;
-            person.posture = postureInString;
-            person.bad_prediction = evaluate[1];
-            person.good_prediction = evaluate[2];
-            if (person.alert) {
-                Imgproc.line(diff_mark, new Point(person.rect.x, person.rect.y),
-                        new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
-                        color, 2);
-                Imgproc.line(diff_mark, new Point(person.rect.x + person.rect.width, person.rect.y),
-                        new Point(person.rect.x, person.rect.y + person.rect.height),
-                        color, 2);
-            }
-            Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime,
-                    new Point(person.rect.x, person.rect.y - 20),
-                    Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
-            Imgproc.putText(diff_mark, "ls:" + person.lastseenTime + " sbb:" + person.sameBBDetected,
-                    new Point(person.rect.x, person.rect.y - 60),
-                    Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
-
-            for (Person p : diffMotionDetector.personsList.persons) {
-                drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);
-            }
-
-            drawImageWithRect(diff_mark, diffMotionDetector.history_knn, Parameters.color_red);
-            drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
-            list.get(frame_number).setPerson_there("true");
-            list.get(frame_number).setPosture(postureInString);
-            list.get(frame_number).setIsMoving(moving);
-            if (person.alert) {
-                list.get(frame_number).setStatus("not_ok");
+            if (diffMotionDetector.backgroundDensity == 1.0) {
+                diffMotionDetector.personsList.persons.removeAll(diffMotionDetector.personsList.persons);
             } else {
-                list.get(frame_number).setStatus("ok");
+                Person person = diffMotionDetector.personsList.addPerson(current_rect);
+                String moving = "moving";
+                if (person.lastmoveTime != 0) {
+                    moving = "not_moving";
+                }
+                double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
+                Scalar color = Parameters.color_red;
+                person.posture = postureInString;
+                person.bad_prediction = evaluate[1];
+                person.good_prediction = evaluate[2];
+                if (person.alert) {
+                    Imgproc.line(diff_mark, new Point(person.rect.x, person.rect.y),
+                            new Point(person.rect.x + person.rect.width, person.rect.y + person.rect.height),
+                            color, 2);
+                    Imgproc.line(diff_mark, new Point(person.rect.x + person.rect.width, person.rect.y),
+                            new Point(person.rect.x, person.rect.y + person.rect.height),
+                            color, 2);
+                }
+                Imgproc.putText(diff_mark, person.getID() + ":" + person.lastmoveTime,
+                        new Point(person.rect.x, person.rect.y - 20),
+                        Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
+                Imgproc.putText(diff_mark, "ls:" + person.lastseenTime + " sbb:" + person.sameBBDetected,
+                        new Point(person.rect.x, person.rect.y - 60),
+                        Core.FONT_HERSHEY_SIMPLEX, 1.5, color, 2);
+
+                for (Person p : diffMotionDetector.personsList.persons) {
+                    drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);
+                }
+
+                drawImageWithRect(diff_mark, diffMotionDetector.history_knn, Parameters.color_red);
+                drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
+                list.get(frame_number).setPerson_there("true");
+                list.get(frame_number).setPosture(postureInString);
+                list.get(frame_number).setIsMoving(moving);
+                if (person.alert) {
+                    list.get(frame_number).setStatus("not_ok");
+                } else {
+                    list.get(frame_number).setStatus("ok");
+                }
+                writeInfo(status, center.toString(), postureInString, moving, evaluate);
             }
-            writeInfo(status, center.toString(), postureInString, moving, evaluate);
         }
 
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
-        return new Mat[]{diffMotionDetector.knn_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
+        return new Mat[]{input, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 
 
