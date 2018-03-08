@@ -142,9 +142,13 @@ public class NewGUIController_ObjectTracking {
 
                     Mat[] detection = imgProcess.personDetector(originalFrame);
                     firstRow = Utils.hstack(Utils.hstack(detection[0], detection[1]), detection[2]);
-                    if (detection.length == 6) {
+                    if (detection.length >= 6) {
                         Mat secondRow = Utils.hstack(Utils.hstack(detection[3], detection[4]), detection[5]);
                         firstRow = Utils.vstack(firstRow, secondRow);
+                    }
+                    if (detection.length == 9) {
+                        Mat thirdRow = Utils.hstack(Utils.hstack(detection[6], detection[7]), detection[8]);
+                        firstRow = Utils.vstack(firstRow, thirdRow);
                     }
                     Image image = Utils.mat2Image(firstRow);
                     updateImageView(imageView, image);

@@ -20,7 +20,7 @@ public class BinaryMaskAnalyser {
         }
         List<MatOfPoint> contours = new ArrayList<>();
         Mat hierarchy = new Mat();
-        Imgproc.findContours(result, contours, hierarchy, 1, 2);
+        Imgproc.findContours(result, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
         if (hierarchy.empty()) {
             return 0;
         } else {

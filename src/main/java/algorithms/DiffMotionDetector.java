@@ -13,6 +13,12 @@ import java.util.List;
 
 public class DiffMotionDetector {
     Mat background_gray;
+    Mat diff_gray = new Mat();
+    Mat thershold_gray = new Mat();
+    Mat erodela_gray = new Mat();
+    Mat update_bg = new Mat();
+    Mat notupdate_bg = new Mat();
+
     private int threshold = 10;
     List<Rect> history = new ArrayList<>();
     Rect history_knn = new Rect(0, 0, 0, 0);
@@ -103,6 +109,8 @@ public class DiffMotionDetector {
     }
 
     private Mat returnMask(Mat frame) {
+        frame.copyTo(update_bg);
+        frame.copyTo(notupdate_bg);
         Mat kernelErode3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Mat kernelDalate3 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
         Mat kernelDalate5 = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(5, 5));
@@ -136,10 +144,11 @@ public class DiffMotionDetector {
 
         Mat delta_image = new Mat();
         Core.absdiff(background_gray, image_gray, delta_image);
+        delta_image.copyTo(diff_gray);
         Mat threshold_image = new Mat();
 
         Imgproc.threshold(delta_image, threshold_image, threshold, 255, Imgproc.THRESH_BINARY);
-
+        threshold_image.copyTo(thershold_gray);
 
         Imgproc.erode(shadow_binary_image, shadow_binary_image, kernelErode3);
         Imgproc.dilate(shadow_binary_image, shadow_binary_image, kernelDalate3);
@@ -149,6 +158,7 @@ public class DiffMotionDetector {
 
         Imgproc.erode(threshold_image, threshold_image, kernelErode3);
         Imgproc.dilate(threshold_image, threshold_image, kernelDalate5);
+        threshold_image.copyTo(erodela_gray);
         //Imgproc.morphologyEx(threshold_image, threshold_image, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.connectedComponentsWithStats(threshold_image, labels, stats, centroids, connectivity, CvType.CV_32S);
 
@@ -159,8 +169,8 @@ public class DiffMotionDetector {
 
         if (BinaryMaskAnalyser.returnNumberOfContours(threshold_image) > 0) {
             Rect currentMotion = BinaryMaskAnalyser.returnMaxAreaRectangle(threshold_image);
-            ArrayList<Rect> rects = BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image);
-            history.addAll(rects);
+            //ArrayList<Rect> rects = BinaryMaskAnalyser.notMaxAreaRectangle(threshold_image);
+            //history.addAll(rects);
             if (currentMotion != null) {
                 history.add(currentMotion);
                 backgroundDensity = stats.get(0, 4)[0] / sum;
@@ -208,7 +218,10 @@ public class DiffMotionDetector {
             if (!Utils.overlaps(r, currentMotion)) {
                 Mat imageROI = new Mat(image_gray, r);
                 imageROI.copyTo(background_gray.colRange(r.x, r.x + imageROI.cols()).rowRange(r.y, r.y + imageROI.rows()));
+                drawImageWithRect(update_bg, r, Parameters.color_red);
                 iterator.remove();
+            }else {
+                drawImageWithRect(notupdate_bg, r, Parameters.color_white);
             }
         }
     }
@@ -238,5 +251,20 @@ public class DiffMotionDetector {
             returnMask_MOG(frame);
         }
         return frame;
+    }
+
+    private void drawRect(Mat img, MatOfRect matOfRect, Scalar color) {
+        List<Rect> rects = matOfRect.toList();
+        for (Rect r : rects) {
+            Imgproc.rectangle(img, r.tl(), r.br(), color, 5);
+        }
+    }
+
+
+    private Mat drawImageWithRect(Mat input, Rect bestRect, Scalar color) {
+        MatOfRect matOfRect = new MatOfRect();
+        matOfRect.fromArray(bestRect);
+        drawRect(input, matOfRect, color);
+        return input;
     }
 }

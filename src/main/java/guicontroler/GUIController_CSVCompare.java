@@ -7,7 +7,10 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
-import org.knowm.xchart.*;
+import org.knowm.xchart.SwingWrapper;
+import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYChartBuilder;
+import org.knowm.xchart.XYSeries;
 import org.knowm.xchart.style.Styler;
 import org.knowm.xchart.style.markers.SeriesMarkers;
 import utils.CSVReaderEvaluation;
@@ -23,7 +26,7 @@ public class GUIController_CSVCompare {
     FileChooser fileChooser = new FileChooser();
     File file1;
     File file2;
-
+    int skip = 250;
     @FXML
     private Label path1;
     @FXML
@@ -51,17 +54,17 @@ public class GUIController_CSVCompare {
             }
 
             //value1.size() == value2.size()
-            double[] v1 = new double[values1.size()];
-            double[] v2 = new double[values1.size()];
-            double[] frame = new double[values1.size()];
+            double[] v1 = new double[values1.size() - skip];
+            double[] v2 = new double[values1.size() - skip];
+            double[] frame = new double[values1.size() - skip];
             int counter = 0;
-            for (int i = 0; i < values1.size(); i++) {
-                v1[i] = values1.get(i).getPosture_in_double();
-                v2[i] = values2.get(i).getPosture_in_double();
-                if (v1[i] == v2[i]) {
+            for (int i = skip; i < values1.size(); i++) {
+                v1[i - skip] = values1.get(i).getPosture_in_double();
+                v2[i - skip] = values2.get(i).getPosture_in_double();
+                if (v1[i - skip] == v2[i - skip]) {
                     counter++;
                 }
-                frame[i] = i + 1;
+                frame[i-skip] = i - skip + 1;
             }
 
             // Create Chart
@@ -71,11 +74,11 @@ public class GUIController_CSVCompare {
             chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
             chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
             chart.getStyler().setYAxisLabelAlignment(Styler.TextAlignment.Right);
-            chart.getStyler().setYAxisDecimalPattern("$ #,###.##");
+            chart.getStyler().setYAxisDecimalPattern("#,###.##");
             chart.getStyler().setPlotMargin(0);
             chart.getStyler().setPlotContentSize(.95);
 
-            String titel = ("True: " + counter + " from: " + values1.size() + " Quote: " + (double) counter / (double) values1.size());
+            String titel = ("True: " + counter + " from: " + (values1.size() - skip) + " Quote: " + (double) counter / (double) (values1.size() - skip));
             chart.setTitle(titel);
             XYSeries real = chart.addSeries("real", frame, v1);
             real.setMarker(SeriesMarkers.NONE);

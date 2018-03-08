@@ -26,7 +26,7 @@ END_FUZZIFY
 FUZZIFY time
     TERM day := gbell 6 10 14  ;
     TERM night1 := gbell 6 10 2;
-    TERM night2 := gbell 4 10 24;
+    TERM night2 := gbell 6 10 26;
 END_FUZZIFY
 
 // Fuzzify input variable 'time'

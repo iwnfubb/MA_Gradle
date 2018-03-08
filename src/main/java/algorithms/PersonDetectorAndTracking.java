@@ -42,12 +42,11 @@ public class PersonDetectorAndTracking {
     public Mat[] detection(Mat input) {
         long startTime = System.currentTimeMillis();
         diffMotionDetector.personsList.tick();
-
+        Mat image_gray = new Mat();
+        Imgproc.cvtColor(input, image_gray, Imgproc.COLOR_BGR2GRAY);
         for (int i = 0; i < diffMotionDetector.personsList.persons.size(); i++) {
             if (diffMotionDetector.personsList.persons.get(i).forcedDelete) {
                 Rect r = diffMotionDetector.personsList.persons.get(i).rect;
-                Mat image_gray = new Mat();
-                Imgproc.cvtColor(input, image_gray, Imgproc.COLOR_BGR2GRAY);
                 Mat imageROI = new Mat(image_gray, r);
                 imageROI.copyTo(diffMotionDetector.background_gray.colRange(r.x, r.x + imageROI.cols()).rowRange(r.y, r.y + imageROI.rows()));
                 for (int k = 0; k < diffMotionDetector.history.size(); k++) {
@@ -115,7 +114,6 @@ public class PersonDetectorAndTracking {
                 drawImageWithRect(diff_mark, p.rect, Parameters.color_blue);
             }
 
-            drawImageWithRect(diff_mark, diffMotionDetector.history_knn, Parameters.color_red);
             drawImageWithRect(diff_mark, current_rect, Parameters.color_green);
             list.get(frame_number).setPerson_there("true");
             list.get(frame_number).setPosture(postureInString);
@@ -132,7 +130,16 @@ public class PersonDetectorAndTracking {
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
         System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
-        return new Mat[]{diffMotionDetector.knn_mask, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
+
+        return new Mat[]{image_gray,
+                diffMotionDetector.background_gray,
+                diffMotionDetector.diff_gray,
+                diffMotionDetector.thershold_gray,
+                diffMotionDetector.erodela_gray
+                , diffMotionDetector.notupdate_bg,
+                diffMotionDetector.update_bg,
+                diff_mark,
+                status};
     }
 
     public Mat[] detection_KNN(Mat input) {
@@ -234,6 +241,11 @@ public class PersonDetectorAndTracking {
                 0, fontScale, statusColor, 2);
         Imgproc.putText(mat, "Good:" + evaluation[2], new Point(mat.width() / 10, mat.height() / 7 * 6),
                 0, fontScale, statusColor, 2);
+
+        Imgproc.putText(mat, postureDetector.scoreString1, new Point(mat.width() / 10, mat.height() / 7 * 6.5),
+                0, 1, statusColor, 2);
+        Imgproc.putText(mat, postureDetector.scoreString2, new Point(mat.width() / 10, mat.height() / 7 * 7),
+                0, 1, statusColor, 2);
     }
 
 

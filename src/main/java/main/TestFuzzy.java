@@ -34,7 +34,7 @@ public class TestFuzzy {
 
         JFuzzyChart.get().chart(status, status.getDefuzzifier(), true);
 
-        // Print ruleSet
+        // Print ruleSetdie
         System.out.println("Status: " + status.getValue());
     }
 
@@ -49,21 +49,26 @@ public class TestFuzzy {
 
         Variable postureVariable = fis.getVariable("posture");
         postureVariable.setValue(1);
+        JFuzzyChart.get().chart(postureVariable, true);
+
 
         Variable timeVariable = fis.getVariable("time");
-        timeVariable.setValue(2);
+        timeVariable.setValue(14);
+        JFuzzyChart.get().chart(timeVariable, true);
 
         Variable xpositionVariable = fis.getVariable("xposition");
         xpositionVariable.setValue(574);
+        JFuzzyChart.get().chart(xpositionVariable, true);
 
         Variable ypositionVariable = fis.getVariable("yposition");
         ypositionVariable.setValue(424);
+        JFuzzyChart.get().chart(ypositionVariable, true);
 
         // Evaluate
         fis.evaluate();
         // Show output variable's chart
         Variable status = fis.getVariable("status");
-
+        JFuzzyChart.get().chart(status, true);
         status.defuzzify();
 
         // Print ruleSet
