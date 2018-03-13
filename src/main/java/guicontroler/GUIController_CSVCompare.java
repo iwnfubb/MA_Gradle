@@ -64,7 +64,7 @@ public class GUIController_CSVCompare {
                 if (v1[i - skip] == v2[i - skip]) {
                     counter++;
                 }
-                frame[i-skip] = i - skip + 1;
+                frame[i - skip] = i - skip + 1;
             }
 
             // Create Chart
@@ -79,6 +79,106 @@ public class GUIController_CSVCompare {
             chart.getStyler().setPlotContentSize(.95);
 
             String titel = ("True: " + counter + " from: " + (values1.size() - skip) + " Quote: " + (double) counter / (double) (values1.size() - skip));
+            chart.setTitle(titel);
+            XYSeries real = chart.addSeries("real", frame, v1);
+            real.setMarker(SeriesMarkers.NONE);
+            XYSeries test = chart.addSeries("test", frame, v2);
+            test.setMarker(SeriesMarkers.NONE);
+
+            // Show it
+            new SwingWrapper(chart).displayChart();
+        }
+    }
+
+    @FXML
+    protected void compareStatus() {
+        ArrayList<String> ROC_List = new ArrayList<>();
+
+
+        if (file1 != null && file2 != null) {
+            CSVReaderEvaluation reader1 = new CSVReaderEvaluation(file1, ",");
+            reader1.read();
+            ArrayList<EvaluationValue> values1 = reader1.getValues();
+            CSVReaderEvaluation reader2 = new CSVReaderEvaluation(file2, ",");
+            reader2.read();
+            ArrayList<EvaluationValue> values2 = reader2.getValues();
+
+            if (values1.size() != values2.size()) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Error");
+                alert.setHeaderText("File size doesn't match");
+                alert.setContentText("Size 1: " + values1.size() + " Size 2: " + values2.size());
+                alert.showAndWait();
+                return;
+            }
+
+            //value1.size() == value2.size()
+            double[] v1 = new double[values1.size() - skip];
+            double[] v2 = new double[values1.size() - skip];
+            double[] frame = new double[values1.size() - skip];
+            int truePositive = 0;
+            int falsePositive = 0;
+            int trueNegative = 0;
+            int falseNegative = 0;
+            int positive = 0;
+            int negative = 0;
+            for (int i = skip; i < values1.size(); i++) {
+                if (values1.get(i).getStatus().equals("") || values1.get(i).getStatus().equals("ok")) {
+                    v1[i - skip] = 1;
+                } else {
+                    v1[i - skip] = 0;
+                }
+
+                if (values2.get(i).getStatus().equals("") || values2.get(i).getStatus().equals("ok")) {
+                    v2[i - skip] = 1;
+                } else {
+                    v2[i - skip] = 0;
+                }
+
+
+                if (v1[i - skip] == 0 && v2[i - skip] == 0) {
+                    truePositive++;
+                }
+                if (v1[i - skip] == 1 && v2[i - skip] == 0) {
+                    falsePositive++;
+                }
+                if (v1[i - skip] == 1 && v2[i - skip] == 1) {
+                    trueNegative++;
+                }
+                if (v1[i - skip] == 0 && v2[i - skip] == 1) {
+                    falseNegative++;
+                }
+
+                if (v1[i - skip] == 0) {
+                    positive++;
+                } else {
+                    negative++;
+                }
+                ROC_List.add(truePositive + "," + falsePositive + "," + falseNegative + "," + trueNegative);
+
+                frame[i - skip] = i - skip + 1;
+            }
+
+            String ROC = "";
+            for (String rocPOint : ROC_List) {
+                ROC = ROC + rocPOint + "\n";
+            }
+
+            // Create Chart
+            XYChart chart = new XYChartBuilder().width(800).height(600).title(getClass().getSimpleName()).xAxisTitle("Frame").yAxisTitle("Posture").build();
+
+            // Customize Chart
+            chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
+            chart.getStyler().setDefaultSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
+            chart.getStyler().setYAxisLabelAlignment(Styler.TextAlignment.Right);
+            chart.getStyler().setYAxisDecimalPattern("#,###.##");
+            chart.getStyler().setPlotMargin(0);
+            chart.getStyler().setPlotContentSize(.95);
+
+            String titel = ("True: " + truePositive + " from: " + positive +
+                    " TruePositive: " + (double) truePositive / (double) positive
+                    + " FalsePositive: " + (double) falsePositive / (double) negative
+            );
             chart.setTitle(titel);
             XYSeries real = chart.addSeries("real", frame, v1);
             real.setMarker(SeriesMarkers.NONE);

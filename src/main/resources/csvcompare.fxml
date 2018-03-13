@@ -18,8 +18,9 @@
     <children>
         <Button fx:id="open1" mnemonicParsing="false" onAction="#openCSVData1" text="open CSV Data 1" GridPane.rowIndex="1" />
         <Button fx:id="open2" mnemonicParsing="false" onAction="#openCSVData2" text="open CSV Data 2" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-        <Button mnemonicParsing="false" onAction="#compare" text="Compare" GridPane.rowIndex="2" />
+        <Button mnemonicParsing="false" onAction="#compare" text="Compare Posture" GridPane.rowIndex="2" />
       <Label fx:id="path1" prefHeight="31.0" prefWidth="306.0" />
       <Label fx:id="path2" prefHeight="34.0" prefWidth="303.0" GridPane.columnIndex="1" />
+      <Button mnemonicParsing="false" onAction="#compareStatus" text="Compare Status" GridPane.columnIndex="1" GridPane.rowIndex="2" />
     </children>
 </GridPane>

@@ -63,7 +63,9 @@ public class NewGUIController_ObjectTracking {
     private int output_height = 720 * 3;
     private VideoWriter videoWriter;
     FileWriter fileWriter;
+    FileWriter fileWriter_Timer;
     ArrayList<EvaluationValue> list;
+    ArrayList<String> list_Timer;
     Iterator<File> iterator = getAllFilesInFolder().iterator();
 
 
@@ -154,6 +156,9 @@ public class NewGUIController_ObjectTracking {
                     updateImageView(imageView, image);
                     Mat output = Utils.rescaleImageToDisplay(firstRow, output_width, output_height);
                     videoWriter.write(output);
+                    if (imgProcess.personDetectorAndTracking.processTime != 0) {
+                        list_Timer.add(String.valueOf(imgProcess.personDetectorAndTracking.processTime));
+                    }
                 };
 
                 this.timer = Executors.newSingleThreadScheduledExecutor();
@@ -236,6 +241,7 @@ public class NewGUIController_ObjectTracking {
 
     private void createCVSFile() {
         list = new ArrayList<>();
+        list_Timer = new ArrayList<>();
         String fileNameWithoutExt = fileName;
         if (fileNameWithoutExt.indexOf(".") > 0) {
             fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
@@ -248,6 +254,7 @@ public class NewGUIController_ObjectTracking {
         }
         try {
             fileWriter = new FileWriter(csvFile);
+            fileWriter_Timer = new FileWriter(Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + "timer.csv", true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -265,6 +272,11 @@ public class NewGUIController_ObjectTracking {
             for (int i = 0; i < list.size(); i++) {
                 CSVWriter.writeLine(fileWriter, list.get(i).toCSVFormat());
             }
+            for (String str : list_Timer) {
+                ArrayList<String> l = new ArrayList<>();
+                l.add(str);
+                CSVWriter.writeLine(fileWriter_Timer, l);
+            }
             /*Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Information Dialog");
             alert.setHeaderText("Look, an Information Dialog");
@@ -273,6 +285,8 @@ public class NewGUIController_ObjectTracking {
             alert.showAndWait();*/
             fileWriter.flush();
             fileWriter.close();
+            fileWriter_Timer.flush();
+            fileWriter_Timer.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (NullPointerException ex) {

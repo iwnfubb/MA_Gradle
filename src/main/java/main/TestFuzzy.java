@@ -52,7 +52,7 @@ public class TestFuzzy {
         JFuzzyChart.get().chart(postureVariable, true);
 
 
-        Variable timeVariable = fis.getVariable("time");
+        Variable timeVariable = fis.getVariable("processTime");
         timeVariable.setValue(14);
         JFuzzyChart.get().chart(timeVariable, true);
 

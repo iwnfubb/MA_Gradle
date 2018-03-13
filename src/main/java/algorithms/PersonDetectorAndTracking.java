@@ -13,6 +13,7 @@ public class PersonDetectorAndTracking {
     boolean startTracking = false;
     PostureDetector postureDetector;
     MovingDetector movingDetector;
+    public long processTime = 0;
 
     public DiffMotionDetector diffMotionDetector;
 
@@ -217,7 +218,8 @@ public class PersonDetectorAndTracking {
         Mat foregroundDisplay = new Mat(input.size(), CvType.CV_8UC1, Scalar.all(126));
         Utils.rescaleImageToDisplay(imageROI, input.width(), input.height());
         imageROI.copyTo(foregroundDisplay.colRange(0, imageROI.cols()).rowRange(0, imageROI.rows()));
-        System.out.println("##### Time: " + (System.currentTimeMillis() - startTime));
+        processTime = (System.currentTimeMillis() - startTime);
+        System.out.println("##### Time: " + processTime);
         return new Mat[]{input, diff_mark, diffMotionDetector.background_gray, binary_mat, foregroundDisplay, status};
     }
 

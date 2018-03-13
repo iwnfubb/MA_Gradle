@@ -87,14 +87,18 @@ public class Person {
         lastseenTime += 1;
         if (posture == "laying" && bad_prediction > 0.8) {
             lastLayingTime++;
-        }
-        else {
+        } else {
             lastLayingTime = 0;
         }
 
         if (lastLayingTime > movementTime && posture == "laying" && bad_prediction > 0.8) {
             alert = true;
         }
+
+        if (posture == "standing" && lastmoveTime < movementTime) {
+            alert = false;
+        }
+
         if (lastseenTime > 4) {
             remove = true;
         }
