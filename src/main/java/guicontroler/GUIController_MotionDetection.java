@@ -60,6 +60,9 @@ public class GUIController_MotionDetection {
     // the id of the camera to be used
     private static int cameraId = 0;
 
+    String knn_time;
+    String vibe_time;
+
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -101,7 +104,9 @@ public class GUIController_MotionDetection {
                     }
 
                     if (knnActive.isSelected()) {
+                        long startTime = System.currentTimeMillis();
                         Mat knnFrame = imgProcess.getKNNModel();
+                        knn_time += (System.currentTimeMillis() - startTime) + ",";
                         if (!knnFrame.empty()) {
                             Image mmgImageToShow = Utils.mat2Image(knnFrame);
                             updateImageView(knnView, mmgImageToShow);
@@ -117,7 +122,9 @@ public class GUIController_MotionDetection {
                     }
 
                     if (vibeActive.isSelected()) {
+                        long startTime = System.currentTimeMillis();
                         Mat vibeFrame = imgProcess.getVibeModel();
+                        vibe_time += (System.currentTimeMillis() - startTime) + ",";
                         if (!vibeFrame.empty()) {
                             Image mmgImageToShow = Utils.mat2Image(vibeFrame);
                             updateImageView(vibeView, mmgImageToShow);

@@ -52,8 +52,8 @@ public class TestFuzzy {
         JFuzzyChart.get().chart(postureVariable, true);
 
 
-        Variable timeVariable = fis.getVariable("processTime");
-        timeVariable.setValue(14);
+        Variable timeVariable = fis.getVariable("time");
+        timeVariable.setValue(0);
         JFuzzyChart.get().chart(timeVariable, true);
 
         Variable xpositionVariable = fis.getVariable("xposition");
