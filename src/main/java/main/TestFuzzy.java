@@ -53,7 +53,9 @@ public class TestFuzzy {
 
 
         Variable timeVariable = fis.getVariable("time");
-        timeVariable.setValue(0);
+        timeVariable.setValue(8);
+        timeVariable.setUniverseMin(0);
+        timeVariable.setUniverseMax(24);
         JFuzzyChart.get().chart(timeVariable, true);
 
         Variable xpositionVariable = fis.getVariable("xposition");
