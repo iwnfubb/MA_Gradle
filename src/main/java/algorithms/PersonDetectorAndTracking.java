@@ -91,7 +91,7 @@ public class PersonDetectorAndTracking {
             if (person.lastmoveTime != 0) {
                 moving = "not_moving";
             }
-            double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
+            double[] evaluate = fuzzyModel.double_evaluate(posture, 14, center.x, center.y);
             Scalar color = Parameters.color_red;
             person.posture = postureInString;
             person.bad_prediction = evaluate[1];
@@ -177,7 +177,7 @@ public class PersonDetectorAndTracking {
                 if (person.lastmoveTime != 0) {
                     moving = "not_moving";
                 }
-                double[] evaluate = fuzzyModel.double_evaluate(posture, 2, center.x, center.y);
+                double[] evaluate = fuzzyModel.double_evaluate(posture, 14, center.x, center.y);
                 Scalar color = Parameters.color_red;
                 person.posture = postureInString;
                 person.bad_prediction = evaluate[1];
