@@ -123,16 +123,16 @@ public class GUIController_CSVCompare {
             int positive = 0;
             int negative = 0;
             for (int i = skip; i < values1.size(); i++) {
-                if (values1.get(i).getStatus().equals("") || values1.get(i).getStatus().equals("ok")) {
-                    v1[i - skip] = 1;
-                } else {
+                if (values1.get(i).getStatus().equals("not_ok")) {
                     v1[i - skip] = 0;
+                } else {
+                    v1[i - skip] = 1;
                 }
 
-                if (values2.get(i).getStatus().equals("") || values2.get(i).getStatus().equals("ok")) {
-                    v2[i - skip] = 1;
-                } else {
+                if (values2.get(i).getStatus().equals("not_ok")) {
                     v2[i - skip] = 0;
+                } else {
+                    v2[i - skip] = 1;
                 }
 
 
@@ -177,6 +177,7 @@ public class GUIController_CSVCompare {
 
             String titel = ("True: " + truePositive + " from: " + positive +
                     " TruePositive: " + (double) truePositive / (double) positive
+                    + "False: " + falsePositive + " from: " + negative
                     + " FalsePositive: " + (double) falsePositive / (double) negative
             );
             chart.setTitle(titel);

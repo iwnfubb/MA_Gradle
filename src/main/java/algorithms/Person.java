@@ -96,7 +96,7 @@ public class Person {
             alert = true;
         }
 
-        if (posture == "standing" && lastmoveTime < badLimit) {
+        if (bad_prediction < Parameters.badValue && lastmoveTime < badLimit) {
             alert = false;
         }
 
