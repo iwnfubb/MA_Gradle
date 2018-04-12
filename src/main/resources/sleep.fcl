@@ -47,7 +47,7 @@ DEFUZZIFY status
     // Use 'Center Of Gravity' defuzzification method
     METHOD : COG;
     // Default value is 0 (if no rule activates defuzzifier)
-    DEFAULT := 6;
+    DEFAULT := 5;
 END_DEFUZZIFY
 
 RULEBLOCK No1
@@ -62,19 +62,14 @@ RULEBLOCK No1
 
     RULE 1 : IF (posture IS laying OR posture IS sitting) AND ((NOT xposition IS good) OR (NOT yposition IS good))
                 THEN status IS bad;
-
     RULE 2 : IF (posture IS laying OR posture IS sitting) AND (xposition IS good) AND (yposition IS good)
                 THEN status IS good;
-
     RULE 3 : IF posture IS laying AND time IS day
                 THEN status IS bad;
-
     RULE 4 : IF posture IS standing AND time IS day
                 THEN status is good;
-
     RULE 5 : IF posture IS sitting AND (time IS night1 OR time IS night2)
                 THEN status is bad;
-
     RULE 6  : IF posture IS bending AND (time IS night1 OR time IS night2)
                 THEN status is bad;
 END_RULEBLOCK
