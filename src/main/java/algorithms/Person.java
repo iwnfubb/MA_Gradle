@@ -1,6 +1,7 @@
 package algorithms;
 
 import org.opencv.core.Rect;
+import utils.Parameters;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -85,7 +86,7 @@ public class Person {
     public void tick() {
         lastmoveTime += 1;
         lastseenTime += 1;
-        if (bad_prediction > 0.8) {
+        if (bad_prediction > Parameters.badValue) {
             badCounter++;
         } else {
             badCounter = 0;

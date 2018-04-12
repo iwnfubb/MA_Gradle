@@ -14,6 +14,7 @@ import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
 import utils.CSVWriter;
 import utils.EvaluationValue;
+import utils.Parameters;
 import utils.Utils;
 
 import java.io.File;
@@ -67,16 +68,33 @@ public class NewGUIController_ObjectTracking {
     ArrayList<EvaluationValue> list;
     ArrayList<String> list_Timer;
     Iterator<File> iterator = getAllFilesInFolder().iterator();
-
-
+    Iterator<Double> iterator_parameters = Parameters.roc_parameters.iterator();
+    boolean started = false;
     /**
      * The action triggered by pushing the button on the GUI
      */
     @FXML
     protected void startCamera() {
+        if (!started && iterator_parameters.hasNext()) {
+            Parameters.badValue = iterator_parameters.next();
+            System.out.println("###############################################################\n" +
+                    "########## Test with Parameter badValue = " + Parameters.badValue + "##########\n"
+                    + "###############################################################");
+            started = true;
+        }
+
         File f = null;
-        if (iterator.hasNext()) {
-            f = iterator.next();
+        if (iterator_parameters.hasNext()) {
+            if (iterator.hasNext()) {
+                f = iterator.next();
+            } else {
+                Parameters.badValue = iterator_parameters.next();
+                System.out.println("###############################################################\n" +
+                        "########## Test with Parameter badValue = " + Parameters.badValue + "##########\n"
+                        + "###############################################################");
+                iterator = getAllFilesInFolder().iterator();
+                f = iterator.next();
+            }
         } else {
             try {
                 this.timer.shutdown();
@@ -248,9 +266,11 @@ public class NewGUIController_ObjectTracking {
         }
         String csvFile;
         if (Utils.activeShadowRemover) {
-            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + "_noshadow.csv";
+            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER +
+                    timeStamp + "_" + fileNameWithoutExt + "_" + Parameters.badValue + "_" + "_noshadow.csv";
         } else {
-            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + fileNameWithoutExt + ".csv";
+            csvFile = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER +
+                    timeStamp + "_" + fileNameWithoutExt + "_" + Parameters.badValue + "_" + ".csv";
         }
         try {
             fileWriter = new FileWriter(csvFile);
