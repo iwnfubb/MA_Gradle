@@ -70,6 +70,7 @@ public class NewGUIController_ObjectTracking {
     Iterator<File> iterator = getAllFilesInFolder().iterator();
     Iterator<Double> iterator_parameters = Parameters.roc_parameters.iterator();
     boolean started = false;
+
     /**
      * The action triggered by pushing the button on the GUI
      */
@@ -113,9 +114,9 @@ public class NewGUIController_ObjectTracking {
             fileNameWithoutExt = fileNameWithoutExt.substring(0, fileNameWithoutExt.lastIndexOf("."));
         }
         if (Utils.activeShadowRemover) {
-            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow" + fileNameWithoutExt + ".mp4";
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_noshadow" + fileNameWithoutExt + "_" + Parameters.badValue + "_" + ".mp4";
         } else {
-            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_" + fileNameWithoutExt + ".mp4";
+            outputPath = Utils.PATH_TO_VIDEOS_OUTPUT_FOLDER + timeStamp + "vo_" + fileNameWithoutExt + "_" + Parameters.badValue + "_" + ".mp4";
         }
 
         videoWriter = new VideoWriter(outputPath, VideoWriter.fourcc('D', 'I', 'V', 'X'), 30, new Size(output_width, output_height), true);

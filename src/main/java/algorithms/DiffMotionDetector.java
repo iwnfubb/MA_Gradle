@@ -39,7 +39,7 @@ public class DiffMotionDetector {
         background_gray = new Mat();
         personsList = new Person.Persons(Parameters.movementMaximum, Parameters.movementMinimum, Parameters.badLimit);
         backgroundSubtractorKNN = Video.createBackgroundSubtractorKNN();
-        backgroundSubtractorKNN.setHistory(100);
+        backgroundSubtractorKNN.setHistory(10);
         backgroundSubtractorKNN.setDetectShadows(true);
     }
 
