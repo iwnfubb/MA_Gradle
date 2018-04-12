@@ -26,7 +26,7 @@ public class GUIController_CSVCompare {
     FileChooser fileChooser = new FileChooser();
     File file1;
     File file2;
-    int skip = 250;
+    int skip = 0;
     @FXML
     private Label path1;
     @FXML
