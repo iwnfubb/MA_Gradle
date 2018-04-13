@@ -9,7 +9,7 @@ import java.util.Arrays;
 public class KernelDensityEstimator {
     private ArrayList<Mat> historyMat = new ArrayList<>();
     private int dirtyIndex = 0;
-    private double N = 1;
+    private double N = 20;
     private double threshold = 0.1;
     private int width = 0;
     private int height = 0;
