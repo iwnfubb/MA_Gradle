@@ -85,7 +85,7 @@ public class NewGUIController_ObjectTracking {
         }
 
         File f = null;
-        if (iterator_parameters.hasNext()) {
+        if (iterator_parameters.hasNext() || iterator.hasNext()) {
             if (iterator.hasNext()) {
                 f = iterator.next();
             } else {
