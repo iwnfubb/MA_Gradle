@@ -54,7 +54,7 @@ public class BinaryMaskAnalyser {
         int max_area_index = getIndexOfLargest(area_array);
         MatOfPoint cnt = contours.get(max_area_index);
         Rect rect = Imgproc.boundingRect(cnt);
-        if (rect.width * rect.height > 130 * 35) {
+        if (rect.width * rect.height > 87 * 21) {
             return Imgproc.boundingRect(cnt);
         } else {
             return null;

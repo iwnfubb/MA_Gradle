@@ -9,6 +9,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
@@ -151,6 +152,10 @@ public class NewGUIController_ObjectTracking {
                     imgProcess.personDetectorAndTracking.frame_number = (int) capture.get(Videoio.CAP_PROP_POS_FRAMES);
                     // effectively grab and process a single frame
                     Mat originalFrame = imgProcess.getOriginalFrame();
+                    if (!originalFrame.empty() && originalFrame.width() > 0 && originalFrame.height() > 0){
+                        Imgproc.resize(originalFrame, originalFrame, new Size(854,450));
+                    }
+
                     if (originalFrame.empty()) {
                         this.cameraActive = false;
                         save();
