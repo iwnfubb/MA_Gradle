@@ -1,10 +1,16 @@
 package guicontroler;
 
-import imageprocess.ImageProcess_ObjectTracking;
+import imageprocess.ImageProcessObjectTracking;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Slider;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -28,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 
 public class GUIController_VideoAnnotation {
     @FXML
@@ -70,7 +77,7 @@ public class GUIController_VideoAnnotation {
     private ScheduledExecutorService timer;
     // the OpenCV object that realizes the video capture
     private VideoCapture capture = new VideoCapture();
-    ImageProcess_ObjectTracking imgProcess = new ImageProcess_ObjectTracking(this.capture);
+    private ImageProcessObjectTracking imgProcess = new ImageProcessObjectTracking(this.capture);
     // a flag to change the button behavior
     private boolean cameraActive = false;
     FileWriter writer;

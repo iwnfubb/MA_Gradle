@@ -1,6 +1,6 @@
 package guicontroler;
 
-import imageprocess.ImageProcess_ObjectTracking;
+import imageprocess.ImageProcessObjectTracking;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -11,7 +11,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Scalar;
 import org.opencv.features2d.Features2d;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
@@ -23,6 +22,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class GUIController_ObjectTracking {
+    public static int frameCounter = 0;
+    // the id of the camera to be used
+    private static int cameraId = 0;
     @FXML
     private ImageView currentFrameView;
     @FXML
@@ -67,22 +69,16 @@ public class GUIController_ObjectTracking {
     private TextField epsilon;
     @FXML
     private TextField minPoints;
-
     // a timer for acquiring the video stream
     private ScheduledExecutorService timer;
     // the OpenCV object that realizes the video capture
     private VideoCapture capture = new VideoCapture();
-    ImageProcess_ObjectTracking imgProcess = new ImageProcess_ObjectTracking(this.capture);
+    private ImageProcessObjectTracking imgProcess = new ImageProcessObjectTracking(this.capture);
     // a flag to change the button behavior
     private boolean cameraActive = false;
-    // the id of the camera to be used
-    private static int cameraId = 0;
-
     private Mat previousFrameFlow = new Mat();
-
     private boolean trigger = false;
     private boolean liveVideo = false;
-    public static int frameCounter = 0;
 
     /**
      * The action triggered by pushing the button on the GUI
@@ -213,11 +209,11 @@ public class GUIController_ObjectTracking {
 
     @FXML
     protected void startTracking(ActionEvent event) {
-        if (!imgProcess.personDetectorAndTracking.isTracking()) {
-            imgProcess.personDetectorAndTracking.startTracking();
+        if (!imgProcess.isPersonTracking()) {
+            imgProcess.startPersonTracking();
             button2.setText("Stop tracking");
         } else {
-            imgProcess.personDetectorAndTracking.stopTracking();
+            imgProcess.stopPersonTracking();
             button2.setText("Start tracking");
         }
 

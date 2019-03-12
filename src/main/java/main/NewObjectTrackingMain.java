@@ -1,6 +1,6 @@
 package main;
 
-import guicontroler.NewGUIController_ObjectTracking;
+import guicontroler.NewGUIControllerObjectTracking;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -20,7 +20,7 @@ public class NewObjectTrackingMain extends Application {
             primaryStage.setResizable(false);
             primaryStage.show();
 
-            NewGUIController_ObjectTracking controller = root.getController();
+            NewGUIControllerObjectTracking controller = root.getController();
             primaryStage.setOnCloseRequest((we -> controller.setClosed()));
         } catch (Exception e) {
             e.printStackTrace();

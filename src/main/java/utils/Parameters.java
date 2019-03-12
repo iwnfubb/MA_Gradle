@@ -18,7 +18,7 @@ public class Parameters {
     public static Scalar color_black = new Scalar(0, 0, 0);
     public static Scalar color_white = new Scalar(255, 255, 255);
     public static Scalar color_gray = new Scalar(126, 126, 126);
-    private static Double[] roc = new Double[]{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    private static Double[] roc = new Double[]{0.8};
     public static List<Double> roc_parameters = Arrays.asList(roc);
 
 }

@@ -25,8 +25,6 @@ public class PostureDetector {
 
     public int detect(Mat input) {
         falsePositive = false;
-        String v_debugString = "";
-        String h_debugString = "";
         scoreString1 = "";
         scoreString2 = "";
         if (input.width() < input.height()) {
@@ -36,7 +34,6 @@ public class PostureDetector {
             double new_width = new_height / ratio;
             Mat resizeImage = new Mat();
             Imgproc.resize(input, resizeImage, new Size(new_width, new_height));
-            //Imgproc.resize(input, resizeImage, new Size(129, 129));
             ArrayList<Double> vertical_histogram = new ArrayList<>();
             int counter = 0;
             for (int i = 0; i < resizeImage.rows(); i++) {
@@ -46,20 +43,14 @@ public class PostureDetector {
                 } else {
                     vertical_histogram.add(0.0d);
                 }
-                v_debugString += "," + vertical_histogram.get(vertical_histogram.size() - 1);
             }
 
             ArrayList<Double> horizontal_histogram = new ArrayList<>();
             for (int i = 0; i < resizeImage.rows(); i++) {
                 horizontal_histogram.add(Core.sumElems(resizeImage.row(i)).val[0] / 255);
-                h_debugString += "," + horizontal_histogram.get(horizontal_histogram.size() - 1);
             }
 
             double[] scores = scoreCalculation(vertical_histogram, horizontal_histogram);
-            //log("## score standing" + scores[0]);
-            //log("## score laying" + scores[1]);
-            //log("## score bending" + scores[2]);
-            //log("## score sitting" + scores[3]);
             scoreString1 = "St:" + scores[0] + " L:" + scores[1];
             scoreString2 = " B:" + scores[2] + "Si:" + scores[3];
             ArrayList<Double> temp = new ArrayList<>();
@@ -77,7 +68,6 @@ public class PostureDetector {
             if (last_index != -1 && last_index != index) {
                 if (diff < fp_threshold) {
                     falsePositive = true;
-                    //log("##### diff change  :" + diff);
                 }
             }
 
@@ -94,7 +84,6 @@ public class PostureDetector {
             ArrayList<Double> vertical_histogram = new ArrayList<>();
             for (int i = 0; i < resizeImage.cols(); i++) {
                 vertical_histogram.add(Core.sumElems(resizeImage.col(i)).val[0] / 126);
-                v_debugString += "," + vertical_histogram.get(vertical_histogram.size() - 1);
             }
 
             int counter = 0;
@@ -106,14 +95,9 @@ public class PostureDetector {
                 } else {
                     horizontal_histogram.add(0.0d);
                 }
-                h_debugString += "," + horizontal_histogram.get(horizontal_histogram.size() - 1);
             }
 
             double[] scores = scoreCalculation(vertical_histogram, horizontal_histogram);
-            //log("## score standing" + scores[0]);
-            //log("## score laying" + scores[1]);
-            //log("## score bending" + scores[2]);
-            //log("## score sitting" + scores[3]);
             scoreString1 = "St:" + scores[0] + " L:" + scores[1];
             scoreString2 = " B:" + scores[2] + "Si:" + scores[3];
             ArrayList<Double> temp = new ArrayList<>();
@@ -125,13 +109,11 @@ public class PostureDetector {
             int index = temp.indexOf(max);
 
             double diff = compareWithLastHistogram(vertical_histogram, horizontal_histogram);
-            //log("## dif :" + diff);
             last_vertical_histogram = vertical_histogram;
             last_horizontal_histogram = horizontal_histogram;
             if (last_index != -1 && last_index != index) {
                 if (diff < fp_threshold) {
                     falsePositive = true;
-                    //log("##### diff change  :" + diff);
                 }
             }
 
